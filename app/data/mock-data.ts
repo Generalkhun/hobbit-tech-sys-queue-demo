@@ -6,6 +6,8 @@ import type {
   QueueBooking,
 } from "@/app/types/queue";
 
+export const demoDate = "2026-10-27";
+
 export const demoUsers: DemoUser[] = [
   {
     id: "admin",
@@ -27,6 +29,13 @@ export const demoUsers: DemoUser[] = [
     organization: "ร้านสมชายค้าเหล็ก · ร้านค้าของเก่า",
     role: "retailer",
     initials: "สช",
+  },
+  {
+    id: "security",
+    name: "คุณสมพงษ์ รักษาการ",
+    organization: "รปภ. ประจำโรงงาน SYS 1",
+    role: "security",
+    initials: "สพ",
   },
 ];
 
@@ -155,6 +164,7 @@ export const mockDrivers: DriverRecord[] = [
     carrier: "ขนส่งอยุธยา",
     plate: "70-4380",
     phone: "081-234-5678",
+    employmentType: "contractor",
     approved: true,
   },
   {
@@ -163,6 +173,7 @@ export const mockDrivers: DriverRecord[] = [
     carrier: "เอสพี ทรานสปอร์ต",
     plate: "71-2398",
     phone: "089-221-1456",
+    employmentType: "contractor",
     approved: true,
   },
   {
@@ -171,6 +182,7 @@ export const mockDrivers: DriverRecord[] = [
     carrier: "ขนส่งอยุธยา",
     plate: "82-1046",
     phone: "086-301-6677",
+    employmentType: "contractor",
     approved: true,
   },
   {
@@ -179,7 +191,17 @@ export const mockDrivers: DriverRecord[] = [
     carrier: "เอสพี ทรานสปอร์ต",
     plate: "71-8854",
     phone: "092-945-1033",
+    employmentType: "contractor",
     approved: false,
+  },
+  {
+    id: "D-005",
+    name: "กิตติพงษ์ สายใจ",
+    carrier: "SYS Fleet",
+    plate: "SYS-006",
+    phone: "081-555-0198",
+    employmentType: "employee",
+    approved: true,
   },
 ];
 

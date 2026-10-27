@@ -1,36 +1,115 @@
 import type { ReactNode } from "react";
+import { getAllowedPages } from "@/app/data/access";
 import { Icon, type IconName } from "@/app/components/icons";
 import { Button } from "@/app/components/ui";
 import type { DemoUser, PageKey } from "@/app/types/queue";
 
-const navigation: { id: PageKey; label: string; icon: IconName }[] = [
-  { id: "overview", label: "ภาพรวมคิว", icon: "dashboard" },
-  { id: "plans", label: "แผนรับเศษเหล็ก", icon: "calendar" },
-  { id: "booking", label: "สร้างใบนำส่ง", icon: "document" },
-  { id: "calling", label: "เรียกคิวรถ", icon: "phone" },
-  { id: "registry", label: "ผู้ขับและรถขนส่ง", icon: "truck" },
+interface NavigationItem {
+  id: PageKey;
+  label: string;
+  icon: IconName;
+}
+
+interface NavigationGroup {
+  label: string;
+  items: NavigationItem[];
+}
+
+const navigationGroups: NavigationGroup[] = [
+  {
+    label: "เมนูหลัก",
+    items: [
+      { id: "overview", label: "แดชบอร์ด", icon: "dashboard" },
+      { id: "plans", label: "แผนรับเหล็ก", icon: "calendar" },
+      { id: "brokers", label: "นายหน้าเศษเหล็ก", icon: "users" },
+      { id: "booking", label: "ใบนำส่งเศษเหล็ก", icon: "document" },
+      { id: "operations", label: "จัดการการจัดส่ง (ปศ.)", icon: "truck" },
+      { id: "security", label: "เรียกรถ (รปภ.)", icon: "shield" },
+      {
+        id: "operation-notes",
+        label: "จัดการใบนำส่งเศษเหล็ก (ปศ.)",
+        icon: "clipboard",
+      },
+      { id: "queue-check", label: "ตรวจคิว", icon: "search" },
+    ],
+  },
+  {
+    label: "จัดการข้อมูล",
+    items: [
+      { id: "sellers", label: "ผู้ขายเศษเหล็ก", icon: "user" },
+      { id: "shops", label: "ร้านค้าย่อย", icon: "warehouse" },
+      { id: "drivers", label: "พนักงานขับรถยนต์", icon: "users" },
+      { id: "vehicles", label: "รถยนต์", icon: "truck" },
+      { id: "provinces", label: "จังหวัด", icon: "map" },
+      { id: "vehicle-types", label: "ประเภทรถ", icon: "weight" },
+    ],
+  },
 ];
 
 const pageDetails: Record<PageKey, { title: string; subtitle: string }> = {
   overview: {
-    title: "ภาพรวมคิวรับเศษเหล็ก",
-    subtitle: "ติดตามรายการจองและสถานะรถเข้าโรงงานแบบเรียลไทม์",
+    title: "แดชบอร์ด",
+    subtitle: "ภาพรวมคิว ปริมาณจอง และสถานะรถของโรงงาน SYS",
   },
   plans: {
-    title: "แผนการรับเศษเหล็ก",
-    subtitle: "กำหนดปริมาณรับซื้อและช่วงเวลาจองแยกตามโรงงานและเกรด",
+    title: "แผนรับเหล็ก",
+    subtitle: "กำหนดปริมาณรับแยกตามโรงงาน เกรด และช่วงเวลา",
+  },
+  brokers: {
+    title: "นายหน้าเศษเหล็ก",
+    subtitle: "จัดการผู้ขายและนายหน้าที่ประสานงานกับ SYS",
   },
   booking: {
-    title: "สร้างใบนำส่ง",
+    title: "ใบนำส่งเศษเหล็ก",
     subtitle: "จองคิวส่งเศษเหล็ก พร้อมแนบใบชั่งต้นทาง",
   },
-  calling: {
-    title: "เรียกคิวรถ",
-    subtitle: "จัดการรถที่รอเรียก ยืนยันรถถึงป้อม และบันทึกการเข้าโรงงาน",
+  operations: {
+    title: "จัดการการจัดส่ง (ปศ.)",
+    subtitle: "ทีมปฏิบัติการเศษเหล็กเรียกรถหลังผ่านสถานี รปภ.",
   },
-  registry: {
-    title: "ผู้ขับและรถขนส่ง",
-    subtitle: "จัดการทะเบียนคนขับและรถภายใต้บริษัทขนส่ง",
+  security: {
+    title: "เรียกรถ (รปภ.)",
+    subtitle: "สถานีแรก · ตรวจใบนำส่งและบันทึกรถผ่านป้อม",
+  },
+  "delivery-notes": {
+    title: "ใบนำส่งเศษเหล็ก",
+    subtitle: "รายการจองและสถานะใบนำส่งของคุณ",
+  },
+  "operation-notes": {
+    title: "จัดการใบนำส่งเศษเหล็ก (ปศ.)",
+    subtitle: "ตรวจรายการใบนำส่งและสถานะรถในความรับผิดชอบ",
+  },
+  "queue-check": {
+    title: "ตรวจคิว",
+    subtitle: "ค้นหาใบนำส่ง ทะเบียนรถ และสถานะคิว",
+  },
+  sellers: {
+    title: "ผู้ขายเศษเหล็ก",
+    subtitle: "ข้อมูลผู้ขายที่ได้รับอนุญาตให้ทำรายการ",
+  },
+  shops: {
+    title: "ร้านค้าย่อย",
+    subtitle: "ร้านค้าของเก่าที่มีเศษเหล็กและเป็นผู้จองรถ",
+  },
+  drivers: {
+    title: "พนักงานขับรถยนต์",
+    subtitle: "ทะเบียนผู้ขับภายใต้บริษัทขนส่งและสถานะอนุมัติ",
+  },
+  vehicles: {
+    title: "รถยนต์",
+    subtitle: "ข้อมูลรถขนส่งที่ลงทะเบียนในระบบ",
+  },
+  provinces: {
+    title: "จังหวัด",
+    subtitle: "ข้อมูลพื้นที่ของร้านค้าและบริษัทขนส่ง",
+  },
+  "vehicle-types": {
+    title: "ประเภทรถ",
+    subtitle: "จัดการประเภทและรายละเอียดรถที่ใช้ลงทะเบียน",
+  },
+  settings: {
+    title: "ตั้งค่า",
+    subtitle: "การตั้งค่าระบบจัดการคิว SYS",
   },
 };
 
@@ -50,85 +129,82 @@ export function AppShell({
   children: ReactNode;
 }) {
   const activePage = pageDetails[page];
+  const allowedPages = getAllowedPages(user.role);
+  const canCreateBooking = user.role !== "security";
 
   return (
     <div className="min-h-screen bg-[#f4f8fa] lg:flex">
-      <aside className="flex flex-col bg-sys-900 text-white lg:fixed lg:inset-y-0 lg:w-[254px]">
-        <div className="flex h-[76px] items-center justify-between border-b border-white/10 px-6">
+      <aside className="flex flex-col bg-sys-700 text-white lg:fixed lg:inset-y-0 lg:w-[254px]">
+        <div className="flex h-[76px] items-center justify-between border-b border-white/10 px-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-[66px] items-center justify-center rounded-xl bg-white/10 text-[22px] font-black italic tracking-[-3px] ring-1 ring-white/10">
+            <div className="flex h-10 w-[66px] items-center justify-center rounded-lg bg-white/15 text-[22px] font-black italic tracking-[-3px] ring-1 ring-white/15">
               SYS
             </div>
-            <div>
-              <p className="text-sm font-bold tracking-wide">QUEUE</p>
-              <p className="mt-0.5 text-[10px] text-white/45">MANAGEMENT</p>
-            </div>
+            <div className="text-sm font-bold tracking-wide">SYS</div>
           </div>
-          <span className="hidden text-white/60 lg:block">···</span>
+          <span className="text-lg tracking-widest text-white/75">···</span>
         </div>
 
-        <div className="mx-4 mt-5 flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2.5 text-xs text-white/70 ring-1 ring-white/10">
-          <span className="h-2 w-2 rounded-full bg-emerald-400" />
-          <span>ระบบรับคิวเปิดให้บริการ</span>
-        </div>
+        <nav className="scrollbar-thin flex gap-1 overflow-x-auto px-2.5 py-4 lg:flex-1 lg:flex-col lg:overflow-y-auto">
+          {navigationGroups.map((group) => {
+            const visibleItems = group.items.filter((item) =>
+              allowedPages.includes(item.id),
+            );
+            if (visibleItems.length === 0) return null;
 
-        <nav className="scrollbar-thin flex gap-1 overflow-x-auto px-3 py-5 lg:flex-1 lg:flex-col lg:overflow-y-auto">
-          <p className="hidden px-3 pb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-white/35 lg:block">
-            Workspace
-          </p>
-          {navigation.map((item) => {
-            const active = page === item.id;
             return (
-              <button
-                type="button"
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`flex shrink-0 items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm transition lg:w-full ${
-                  active
-                    ? "bg-white text-sys-800 shadow-sm"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <Icon name={item.icon} size={18} />
-                <span className="font-medium">{item.label}</span>
-                {item.id === "calling" && (
-                  <span
-                    className={`ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      active
-                        ? "bg-sys-50 text-sys-700"
-                        : "bg-white/10 text-white/80"
-                    }`}
-                  >
-                    5
-                  </span>
-                )}
-              </button>
+              <section key={group.label} className="mb-3">
+                <h2 className="hidden px-3 pb-2 pt-1 text-[10px] font-semibold text-white/65 lg:block">
+                  {group.label}
+                </h2>
+                <div className="flex gap-1 lg:flex-col">
+                  {visibleItems.map((item) => {
+                    const active = page === item.id;
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        aria-current={active ? "page" : undefined}
+                        onClick={() => onNavigate(item.id)}
+                        className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs transition lg:w-full ${
+                          active
+                            ? "bg-white font-semibold text-sys-700 shadow-sm"
+                            : "text-white/90 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <Icon name={item.icon} size={17} />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
-
-          <div className="hidden lg:block">
-            <p className="px-3 pb-2 pt-6 text-[10px] font-bold uppercase tracking-[0.14em] text-white/35">
-              System
-            </p>
+          {allowedPages.includes("settings") && (
             <button
               type="button"
-              onClick={() => onNavigate("registry")}
-              className="flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+              onClick={() => onNavigate("settings")}
+              className={`flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs transition lg:w-full ${
+                page === "settings"
+                  ? "bg-white font-semibold text-sys-700 shadow-sm"
+                  : "text-white/90 hover:bg-white/10 hover:text-white"
+              }`}
             >
-              <Icon name="chart" size={18} />
-              <span className="font-medium">รายงานและประวัติ</span>
+              <Icon name="settings" size={17} />
+              <span className="font-medium">ตั้งค่า</span>
             </button>
-          </div>
+          )}
         </nav>
 
-        <div className="hidden border-t border-white/10 p-4 lg:block">
-          <div className="flex items-center gap-3 rounded-xl bg-white/5 p-3">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-sys-500 text-xs font-bold">
+        <div className="hidden border-t border-white/10 p-3 lg:block">
+          <div className="flex items-center gap-2.5 rounded-xl bg-white/10 p-2.5">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/20 text-xs font-bold">
               {user.initials}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-semibold">{user.name}</p>
-              <p className="mt-1 truncate text-[10px] text-white/50">
+              <p className="mt-1 truncate text-[10px] text-white/70">
                 {user.organization}
               </p>
             </div>
@@ -136,7 +212,7 @@ export function AppShell({
               type="button"
               onClick={onLogout}
               aria-label="ออกจากระบบ"
-              className="text-white/55 transition hover:text-white"
+              className="text-white/70 transition hover:text-white"
             >
               <Icon name="logout" size={17} />
             </button>
@@ -149,7 +225,7 @@ export function AppShell({
           <div className="flex min-h-[76px] items-center justify-between gap-4 px-4 sm:px-7 xl:px-10">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs text-slate-400">
-                <span>SYS Queue</span>
+                <span>SYS</span>
                 <Icon name="chevron" size={13} />
                 <span className="truncate text-slate-600">{activePage.title}</span>
               </div>
@@ -161,21 +237,15 @@ export function AppShell({
               <span className="hidden text-xs text-slate-500 md:block">
                 อังคาร 27 ต.ค. 2569
               </span>
-              <button
-                type="button"
-                aria-label="การแจ้งเตือน"
-                className="relative grid h-10 w-10 place-items-center rounded-xl border border-slate-100 text-slate-500 hover:bg-slate-50"
-              >
-                <Icon name="bell" size={18} />
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-rose-500" />
-              </button>
-              <Button
-                onClick={onCreateBooking}
-                className="hidden sm:inline-flex"
-              >
-                <Icon name="plus" size={17} />
-                สร้างใบนำส่ง
-              </Button>
+              {canCreateBooking && (
+                <Button
+                  onClick={onCreateBooking}
+                  className="hidden sm:inline-flex"
+                >
+                  <Icon name="plus" size={17} />
+                  สร้างใบนำส่ง
+                </Button>
+              )}
               <div className="grid h-9 w-9 place-items-center rounded-full bg-sys-100 text-xs font-bold text-sys-700 sm:hidden">
                 {user.initials}
               </div>

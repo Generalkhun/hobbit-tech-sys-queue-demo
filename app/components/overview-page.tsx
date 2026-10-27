@@ -27,9 +27,15 @@ const gradeTint = [
 export function OverviewPage({
   bookings,
   onNavigate,
+  canManagePlans,
+  queuePage,
+  queueActionLabel,
 }: {
   bookings: QueueBooking[];
   onNavigate: (page: PageKey) => void;
+  canManagePlans: boolean;
+  queuePage: PageKey;
+  queueActionLabel: string;
 }) {
   const active = bookings.filter((booking) => booking.status !== "completed");
   const waiting = bookings.filter(
@@ -187,13 +193,15 @@ export function OverviewPage({
                 ปริมาณจองรวม 468 ตัน
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigate("plans")}
-              className="text-xs font-semibold text-sys-600 hover:text-sys-800"
-            >
-              ดูแผน
-            </button>
+            {canManagePlans && (
+              <button
+                type="button"
+                onClick={() => onNavigate("plans")}
+                className="text-xs font-semibold text-sys-600 hover:text-sys-800"
+              >
+                ดูแผน
+              </button>
+            )}
           </div>
           <div className="mt-6 flex h-3 overflow-hidden rounded-full">
             {[36, 27, 18, 12, 7].map((share, index) => (
@@ -253,10 +261,10 @@ export function OverviewPage({
           </div>
           <button
             type="button"
-            onClick={() => onNavigate("calling")}
+            onClick={() => onNavigate(queuePage)}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-sys-600 hover:text-sys-800"
           >
-            ไปหน้าเรียกคิว <Icon name="arrow" size={14} />
+            {queueActionLabel} <Icon name="arrow" size={14} />
           </button>
         </div>
         <div className="scrollbar-thin overflow-x-auto">

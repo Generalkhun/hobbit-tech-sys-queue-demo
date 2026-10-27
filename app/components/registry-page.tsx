@@ -25,6 +25,8 @@ export function RegistryPage({
   const [carrier, setCarrier] = useState("");
   const [plate, setPlate] = useState("");
   const [phone, setPhone] = useState("");
+  const [employmentType, setEmploymentType] =
+    useState<DriverRecord["employmentType"]>("contractor");
   const [savedNotice, setSavedNotice] = useState("");
   const approvedCount = drivers.filter((driver) => driver.approved).length;
   const pendingCount = drivers.length - approvedCount;
@@ -50,6 +52,7 @@ export function RegistryPage({
       carrier: carrier.trim(),
       plate: plate.trim(),
       phone: phone.trim(),
+      employmentType,
       approved: user.role === "admin",
     };
     onRegister(driver);
@@ -103,6 +106,7 @@ export function RegistryPage({
                   <th className="px-6 py-3.5">ผู้ขับ / โทรศัพท์</th>
                   <th className="px-4 py-3.5">บริษัทขนส่ง</th>
                   <th className="px-4 py-3.5">ทะเบียนรถ</th>
+                  <th className="px-4 py-3.5">ประเภทผู้ขับ</th>
                   <th className="px-4 py-3.5">สถานะ</th>
                   <th className="px-6 py-3.5 text-right">จัดการ</th>
                 </tr>
@@ -125,6 +129,11 @@ export function RegistryPage({
                       <span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-600">
                         {driver.plate}
                       </span>
+                    </td>
+                    <td className="px-4 py-4 text-slate-600">
+                      {driver.employmentType === "employee"
+                        ? "พนักงานบริษัท"
+                        : "พนักงานขับรถรับจ้าง"}
                     </td>
                     <td className="px-4 py-4">
                       <span
@@ -188,6 +197,22 @@ export function RegistryPage({
                 placeholder="ชื่อบริษัทขนส่ง"
                 required
               />
+            </FieldLabel>
+            <FieldLabel label="ประเภทพนักงานขับรถ" required>
+              <select
+                className={inputClassName}
+                value={employmentType}
+                onChange={(event) =>
+                  setEmploymentType(
+                    event.target.value === "employee"
+                      ? "employee"
+                      : "contractor",
+                  )
+                }
+              >
+                <option value="contractor">พนักงานขับรถรับจ้าง</option>
+                <option value="employee">พนักงานขับรถบริษัท</option>
+              </select>
             </FieldLabel>
             <div className="grid grid-cols-2 gap-3">
               <FieldLabel label="ทะเบียนรถ" required>

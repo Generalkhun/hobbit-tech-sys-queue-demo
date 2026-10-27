@@ -1,6 +1,22 @@
-export type UserRole = "admin" | "broker" | "retailer";
+export type UserRole = "admin" | "broker" | "retailer" | "security";
 
-export type PageKey = "overview" | "plans" | "booking" | "calling" | "registry";
+export type PageKey =
+  | "overview"
+  | "plans"
+  | "brokers"
+  | "booking"
+  | "operations"
+  | "security"
+  | "delivery-notes"
+  | "operation-notes"
+  | "queue-check"
+  | "sellers"
+  | "shops"
+  | "drivers"
+  | "vehicles"
+  | "provinces"
+  | "vehicle-types"
+  | "settings";
 
 export type BookingStatus =
   | "confirmed"
@@ -49,6 +65,7 @@ export interface DriverRecord {
   carrier: string;
   plate: string;
   phone: string;
+  employmentType: "employee" | "contractor";
   approved: boolean;
 }
 

@@ -14,8 +14,13 @@ Open [http://localhost:3000](http://localhost:3000). On the sign-in screen, choo
 - **SYS admin** — adjust daily plant and grade plans, call queues, and approve driver registrations.
 - **Scrap-metal broker** — create delivery bookings on behalf of scrap shops.
 - **Scrap shop** — book its own trucks and follow delivery status.
+- **Security guard** — use the first station to verify delivery slips and record trucks arriving at the gate. Queue calling remains with the SYS scrap operations team.
 
 The app uses local mock data only. It includes two SYS plants, approved and pending drivers, sample bookings, plan adjustments, and a scannable QR payload on generated delivery slips. Use the queue screen to simulate gate scanning by entering a slip number, call a checked-in truck, and complete its visit.
+
+The sidebar follows the earlier SYS navigation structure, with separate main workflow and data-management sections. Security accounts only see the dashboard, gate station, and queue lookup. The **เรียกรถ (รปภ.)** screen records the first-station gate check; **จัดการการจัดส่ง (ปศ.)** is the scrap operations team's separate queue-calling screen.
+
+Creating a delivery slip follows four non-clickable progress steps: delivery details and source weigh ticket, registered vehicle selection, approved driver selection, and successful save with the generated QR delivery slip.
 
 ## Project layout
 

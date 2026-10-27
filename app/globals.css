@@ -51,9 +51,7 @@ button {
 }
 
 .login-scene {
-  background:
-    radial-gradient(ellipse at 18% 83%, rgb(148 218 224 / 25%), transparent 36%),
-    linear-gradient(145deg, #1a819d 0%, #279eb8 52%, #48b4c6 100%);
+  background: linear-gradient(145deg, #269ab5 0%, #2394b0 55%, #218ca8 100%);
 }
 
 .grid-pattern {
