@@ -68,6 +68,12 @@ export interface QueueBooking {
   schedulingReason?: string;
 }
 
+export interface BookingReceipt {
+  state: "pending" | "received" | "no-show";
+  receivedDate: string;
+  receivedKg: number;
+}
+
 export interface DeliveryDraft {
   id: string;
   step: 0 | 1 | 2;

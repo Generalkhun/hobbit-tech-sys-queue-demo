@@ -51,6 +51,7 @@ import { SettingsPage } from "@/app/components/settings-page";
 import { Panel } from "@/app/components/ui";
 import type {
   BookingStatus,
+  BookingReceipt,
   DeliveryDraft,
   DemoUser,
   DriverRecord,
@@ -62,6 +63,9 @@ export function DemoApp() {
   const [user, setUser] = useState<DemoUser | null>(null);
   const [page, setPage] = useState<PageKey>("overview");
   const [bookings, setBookings] = useState(mockBookings);
+  const [bookingReceipts, setBookingReceipts] = useState<
+    Record<string, BookingReceipt>
+  >({});
   const [deliveryDrafts, setDeliveryDrafts] = useState<DeliveryDraft[]>([]);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
@@ -173,6 +177,16 @@ export function DemoApp() {
       ),
     );
     return null;
+  }
+
+  function updateBookingReceipt(
+    bookingId: string,
+    receipt: BookingReceipt,
+  ) {
+    setBookingReceipts((current) => ({
+      ...current,
+      [bookingId]: receipt,
+    }));
   }
 
   function createBooking(
@@ -370,6 +384,9 @@ export function DemoApp() {
     content = (
       <OverviewPage
         bookings={bookings}
+        plans={plans}
+        receipts={bookingReceipts}
+        onReceiptChange={updateBookingReceipt}
         onNavigate={navigateTo}
         canManagePlans={
           user.role === "admin" || user.role === "operations"
