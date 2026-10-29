@@ -8,7 +8,6 @@ import {
   hasCurrentPolicyAcknowledgement,
 } from "@/app/data/eligibility";
 import {
-  getPlantScheduleOptions,
   schedulePlant,
 } from "@/app/data/scheduling";
 import type { CapacityResolver } from "@/app/data/slot-capacity";
@@ -23,6 +22,7 @@ import {
 } from "@/app/components/ui";
 import type {
   BlacklistRecord,
+  DeliveryDraft,
   DemoUser,
   DriverRecord,
   PlanRow,
@@ -59,11 +59,56 @@ const wizardSteps: { title: string; icon: IconName }[] = [
   { title: "ข้อมูลการจัดส่ง", icon: "document" },
   { title: "รถยนต์", icon: "truck" },
   { title: "พนักงานขับรถยนต์", icon: "user" },
-  { title: "บันทึกข้อมูลสำเร็จ", icon: "check" },
 ];
 
 function getVehicleKey(driver: Pick<DriverRecord, "carrier" | "plate">) {
   return `${driver.carrier}::${driver.plate}`;
+}
+
+function WeightInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const numericValue = Number(value) || 0;
+
+  return (
+    <FieldLabel label={label} required>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label={`ลด${label} 100 กิโลกรัม`}
+          disabled={numericValue <= 0}
+          onClick={() => onChange(String(Math.max(0, numericValue - 100)))}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-lg text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          −
+        </button>
+        <input
+          className={inputClassName}
+          type="number"
+          min="0"
+          step="100"
+          inputMode="numeric"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          required
+        />
+        <button
+          type="button"
+          aria-label={`เพิ่ม${label} 100 กิโลกรัม`}
+          onClick={() => onChange(String(numericValue + 100))}
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-slate-200 text-lg text-slate-600 hover:bg-slate-50"
+        >
+          +
+        </button>
+      </div>
+    </FieldLabel>
+  );
 }
 
 function DeliveryQr({ value }: { value: string }) {
@@ -144,7 +189,12 @@ function DeliverySlip({
     ["ร้านค้าของเก่า", booking.retailer],
     ["ผู้ขาย / นายหน้า", booking.broker],
     ["เกรดเศษเหล็ก", booking.grade],
-    ["ปริมาณโดยประมาณ", `${booking.estimatedTons} ตัน`],
+    ["ชั่งหนัก", `${booking.heavyWeightKg.toLocaleString("th-TH")} กก.`],
+    ["ชั่งเบา", `${booking.lightWeightKg.toLocaleString("th-TH")} กก.`],
+    [
+      "น้ำหนักสุทธิ",
+      `${((booking.heavyWeightKg - booking.lightWeightKg)).toLocaleString("th-TH")} กก.`,
+    ],
     ["ชื่อผู้ขับ", booking.driver],
     ["บริษัทขนส่ง · ทะเบียนรถ", `${booking.carrier} · ${booking.plate}`],
   ];
@@ -222,6 +272,11 @@ export function BookingPage({
   onGoToRegistry,
   onAcknowledgePolicies,
   resolveCapacity,
+  draft,
+  viewBooking,
+  onDraftChange,
+  onCompleteDraft,
+  onReturnToList,
 }: {
   user: DemoUser;
   drivers: DriverRecord[];
@@ -233,20 +288,32 @@ export function BookingPage({
   onCreate: (booking: NewBooking) => BookingCreationResult;
   onGoToRegistry: () => void;
   onAcknowledgePolicies: (shopName: string) => boolean;
+  draft: DeliveryDraft;
+  viewBooking?: QueueBooking;
+  onDraftChange: (draft: DeliveryDraft) => void;
+  onCompleteDraft: (draftId: string) => void;
+  onReturnToList: () => void;
 }) {
   const ownShop = "ร้านสมชายค้าเหล็ก";
-  const [step, setStep] = useState(0);
-  const [retailer, setRetailer] = useState(
-    user.role === "retailer" ? ownShop : retailerNames[1],
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(
+    viewBooking ? 3 : draft.step,
   );
-  const [broker, setBroker] = useState(
-    user.role === "broker" ? "บริษัท เอส.เอส. เมทัล" : "—",
+  const [retailer, setRetailer] = useState(draft.retailer || ownShop);
+  const [broker, setBroker] = useState(draft.broker || "—");
+  const [grade, setGrade] = useState(draft.grade || "Bundle SY");
+  const [date, setDate] = useState(draft.date || demoDate);
+  const [timeSlot, setTimeSlot] = useState(
+    draft.timeSlot || bookableSlots[1],
   );
-  const [grade, setGrade] = useState("Bundle SY");
-  const [date, setDate] = useState(demoDate);
-  const [timeSlot, setTimeSlot] = useState(bookableSlots[1]);
-  const [estimatedTons, setEstimatedTons] = useState("28");
-  const [ticketName, setTicketName] = useState("ใบชั่งต้นทาง_ตัวอย่าง.pdf");
+  const [heavyWeightKg, setHeavyWeightKg] = useState(
+    draft.heavyWeightKg || "40000",
+  );
+  const [lightWeightKg, setLightWeightKg] = useState(
+    draft.lightWeightKg || "12000",
+  );
+  const [ticketName, setTicketName] = useState(
+    draft.ticketName || "ใบชั่งต้นทาง_ตัวอย่าง.pdf",
+  );
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [dataUseAccepted, setDataUseAccepted] = useState(false);
   const approvedDrivers = drivers.filter((driver) => driver.approved);
@@ -268,20 +335,31 @@ export function BookingPage({
     },
     [] as DeliveryVehicle[],
   );
-  const [vehicleKey, setVehicleKey] = useState(() => {
-    const firstApproved = drivers.find((driver) => driver.approved);
-    return firstApproved ? getVehicleKey(firstApproved) : "";
-  });
+  const [vehicleKey, setVehicleKey] = useState(() =>
+    draft.carrier && draft.plate
+      ? `${draft.carrier}::${draft.plate}`
+      : approvedDrivers[0]
+        ? getVehicleKey(approvedDrivers[0])
+        : "",
+  );
   const selectedVehicle = vehicles.find((vehicle) => vehicle.key === vehicleKey);
   const [employmentType, setEmploymentType] =
-    useState<EmploymentType>("contractor");
-  const [driverId, setDriverId] = useState("");
+    useState<EmploymentType>(draft.employmentType || "contractor");
+  const [driverId, setDriverId] = useState(draft.driverId);
   const [createdBooking, setCreatedBooking] = useState<QueueBooking | null>(
-    null,
+    viewBooking ?? null,
   );
   const [formError, setFormError] = useState("");
+  const heavyWeight = Number(heavyWeightKg);
+  const lightWeight = Number(lightWeightKg);
+  const hasValidWeights =
+    Number.isFinite(heavyWeight) &&
+    Number.isFinite(lightWeight) &&
+    heavyWeight > 0 &&
+    lightWeight > 0;
+  const estimatedTons = (heavyWeight - lightWeight) / 1000;
   const schedule = schedulePlant(
-    { date, timeSlot, grade, estimatedTons: Number(estimatedTons) },
+    { date, timeSlot, grade, estimatedTons },
     plans,
     bookings,
     resolveCapacity,
@@ -290,13 +368,6 @@ export function BookingPage({
     retailer,
     policyVersion,
     acknowledgements,
-  );
-  const scheduleOptions = getPlantScheduleOptions(
-    { date, timeSlot, grade, estimatedTons: Number(estimatedTons) },
-    plans,
-    bookings,
-    undefined,
-    resolveCapacity,
   );
   const availableDrivers =
     selectedVehicle?.drivers.filter(
@@ -309,9 +380,42 @@ export function BookingPage({
     ? getBlacklistReason(selectedDriver.id, selectedDriver.plate, blacklist)
     : [];
 
+  function getCurrentDraft(savedStep: 0 | 1 | 2 = step === 3 ? 2 : step) {
+    return {
+      id: draft.id,
+      step: savedStep,
+      retailer,
+      broker,
+      grade,
+      date,
+      timeSlot,
+      heavyWeightKg,
+      lightWeightKg,
+      ticketName,
+      driverId,
+      employmentType,
+      carrier: selectedVehicle?.carrier ?? "",
+      plate: selectedVehicle?.plate ?? "",
+      driver: selectedDriver?.name ?? "",
+    };
+  }
+
+  function saveDraft() {
+    onDraftChange(getCurrentDraft());
+    onReturnToList();
+  }
+
   function continueToVehicle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
+    if (!hasValidWeights) {
+      setFormError("กรุณาระบุน้ำหนักชั่งหนักและชั่งเบาให้มากกว่า 0 กิโลกรัม");
+      return;
+    }
+    if (estimatedTons <= 0) {
+      setFormError("น้ำหนักชั่งหนักต้องมากกว่าน้ำหนักชั่งเบา");
+      return;
+    }
     if (!shopHasAcknowledged) {
       if (
         user.role === "retailer" &&
@@ -334,6 +438,7 @@ export function BookingPage({
       setFormError(schedule.reason);
       return;
     }
+    onDraftChange(getCurrentDraft(1));
     setStep(1);
   }
 
@@ -360,6 +465,11 @@ export function BookingPage({
       setStep(0);
       return;
     }
+    if (!hasValidWeights || estimatedTons <= 0) {
+      setFormError("กรุณาตรวจสอบน้ำหนักชั่งหนักและชั่งเบาให้ถูกต้อง");
+      setStep(0);
+      return;
+    }
     if (selectedDriverBlacklistReasons.length > 0) {
       setFormError(
         `ไม่สามารถสร้างใบนำส่งได้: ${selectedDriverBlacklistReasons.join(" · ")}`,
@@ -370,7 +480,9 @@ export function BookingPage({
       retailer,
       broker,
       grade,
-      estimatedTons: Number(estimatedTons),
+      heavyWeightKg: heavyWeight,
+      lightWeightKg: lightWeight,
+      estimatedTons,
       date,
       timeSlot,
       driver: selectedDriver.name,
@@ -385,21 +497,32 @@ export function BookingPage({
     }
     setCreatedBooking(creation.booking);
     setFormError("");
+    onCompleteDraft(draft.id);
     setStep(3);
   }
 
   function startNewBooking() {
-    setStep(0);
-    setCreatedBooking(null);
-    setFormError("");
+    onReturnToList();
   }
 
   return (
     <div className="space-y-6">
+      <button
+        type="button"
+        onClick={onReturnToList}
+        className="inline-flex items-center gap-2 text-sm font-semibold text-sys-700 hover:text-sys-900"
+      >
+        <Icon name="arrow" size={15} className="rotate-180" />
+        กลับไปรายการใบนำส่ง
+      </button>
       <Panel className="overflow-hidden">
         <div className="border-b border-slate-100 px-5 py-5 sm:px-7">
           <h2 className="text-base font-bold text-sys-900">
-            สร้างใบนำส่งเศษเหล็ก
+            {viewBooking
+              ? "รายละเอียดใบนำส่ง"
+              : draft.step > 0
+                ? "แก้ไขใบนำส่งเศษเหล็ก"
+                : "สร้างใบนำส่งเศษเหล็ก"}
           </h2>
           <p className="mt-1 text-xs text-slate-400">
             กรอกข้อมูลตามลำดับขั้นตอนเพื่อออกใบนำส่ง
@@ -410,7 +533,7 @@ export function BookingPage({
           className="scrollbar-thin overflow-x-auto px-4 py-4 sm:px-7"
           aria-label="ขั้นตอนการสร้างใบนำส่ง"
         >
-          <ol className="grid min-w-[640px] grid-cols-4 gap-2 sm:gap-3">
+          <ol className="grid min-w-[640px] grid-cols-3">
             {wizardSteps.map((wizardStep, index) => {
               const complete = index < step;
               const current = index === step;
@@ -418,7 +541,21 @@ export function BookingPage({
                 <li
                   key={wizardStep.title}
                   aria-current={current ? "step" : undefined}
-                  className={`flex min-h-[54px] items-center gap-2 rounded-xl px-2.5 py-2 text-xs font-semibold sm:gap-3 sm:px-4 ${
+                  style={{
+                    clipPath:
+                      index === 0
+                        ? "polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%)"
+                        : index === wizardSteps.length - 1
+                          ? "polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%)"
+                          : "polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%)",
+                  }}
+                  className={`relative -mr-3 flex min-h-[58px] items-center gap-2 px-4 py-2 text-xs font-semibold sm:gap-3 sm:px-6 ${
+                    index === 0
+                      ? "z-30"
+                      : index === 1
+                        ? "z-20"
+                        : "z-10 mr-0"
+                  } ${
                     complete
                       ? "bg-emerald-600 text-white"
                       : current
@@ -451,7 +588,7 @@ export function BookingPage({
             <div className="border-t border-slate-100 px-5 py-6 sm:px-7">
               <div className="mb-5 flex items-center justify-between">
                 <h3 className="font-bold text-sys-900">ข้อมูลการจัดส่ง</h3>
-                <span className="text-xs text-slate-400">ขั้นตอน 1 จาก 4</span>
+                <span className="text-xs text-slate-400">ขั้นตอน 1 จาก 3</span>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -487,13 +624,8 @@ export function BookingPage({
                   <p className="text-xs font-medium text-slate-500">
                     โรงงานปลายทาง · ระบบจัดสรรอัตโนมัติ
                   </p>
-                  <p className="mt-1.5 text-base font-bold text-sys-800">
-                    {schedule.available
-                      ? schedule.decision.plantId.replace("SYS", "SYS ")
-                      : "ยังจัดสรรไม่ได้"}
-                  </p>
                   <p className="mt-1 text-[11px] leading-5 text-slate-500">
-                    {schedule.available ? schedule.decision.reason : schedule.reason}
+                    ระบบจะเลือกโรงงานและจัดสรรคิวที่เหมาะสมให้โดยอัตโนมัติ
                   </p>
                 </div>
                 <FieldLabel label="เกรดเศษเหล็ก" required>
@@ -532,45 +664,22 @@ export function BookingPage({
                     ))}
                   </select>
                 </FieldLabel>
-                <FieldLabel label="ปริมาณโดยประมาณ (ตัน)" required>
-                  <input
-                    className={inputClassName}
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={estimatedTons}
-                    onChange={(event) => setEstimatedTons(event.target.value)}
-                    required
-                  />
-                </FieldLabel>
+                <WeightInput
+                  label="น้ำหนักชั่งหนัก (กิโลกรัม)"
+                  value={heavyWeightKg}
+                  onChange={setHeavyWeightKg}
+                />
+                <WeightInput
+                  label="น้ำหนักชั่งเบา (กิโลกรัม)"
+                  value={lightWeightKg}
+                  onChange={setLightWeightKg}
+                />
               </div>
 
-              <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
-                <p className="text-sm font-semibold text-slate-700">
-                  เหตุผลการจัดสรร slot นี้
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {scheduleOptions.map((option) => (
-                    <div
-                      key={option.plantId}
-                      className={`rounded-lg px-3 py-2 text-xs ${
-                        schedule.available &&
-                        schedule.decision.plantId === option.plantId
-                          ? "bg-sys-50 text-sys-800 ring-1 ring-sys-200"
-                          : "bg-slate-50 text-slate-600"
-                      }`}
-                    >
-                      <p className="font-semibold">
-                        {option.plantId.replace("SYS", "SYS ")} · รถใน slot{" "}
-                        {option.bookedVehicles}/{option.maxVehicles} คัน
-                      </p>
-                      <p className="mt-1">
-                        ขาดเกรดนี้อีก {option.gradeShortageTons} ตัน ·
-                        slot ว่าง {option.remainingVehicles} คัน
-                      </p>
-                    </div>
-                  ))}
-                </div>
+              <div className="mt-3 text-xs text-slate-500">
+                น้ำหนักสุทธิ:{" "}
+                {Math.max(0, heavyWeight - lightWeight).toLocaleString("th-TH")}{" "}
+                กิโลกรัม (ชั่งหนัก − ชั่งเบา)
               </div>
 
               {!shopHasAcknowledged && (
@@ -646,8 +755,12 @@ export function BookingPage({
                 {formError}
               </p>
             )}
-            <div className="flex justify-end border-t border-slate-100 px-5 py-4 sm:px-7">
-              <Button type="submit">
+            <div className="flex flex-wrap justify-between gap-3 border-t border-slate-100 px-5 py-4 sm:px-7">
+              <Button type="button" variant="secondary" onClick={saveDraft}>
+                <Icon name="document" size={16} />
+                บันทึก
+              </Button>
+              <Button type="submit" disabled={!hasValidWeights}>
                 ถัดไป: รถยนต์ <Icon name="arrow" size={16} />
               </Button>
             </div>
@@ -664,7 +777,7 @@ export function BookingPage({
                     เลือกรถที่ลงทะเบียนและผ่านการอนุมัติแล้ว
                   </p>
                 </div>
-                <span className="text-xs text-slate-400">ขั้นตอน 2 จาก 4</span>
+                <span className="text-xs text-slate-400">ขั้นตอน 2 จาก 3</span>
               </div>
 
               {vehicles.length > 0 ? (
@@ -756,24 +869,31 @@ export function BookingPage({
                 {formError}
               </p>
             )}
-            <div className="flex justify-between border-t border-slate-100 px-5 py-4 sm:px-7">
+            <div className="flex flex-wrap justify-between gap-3 border-t border-slate-100 px-5 py-4 sm:px-7">
               <Button variant="secondary" onClick={() => setStep(0)}>
                 <Icon name="arrow" size={16} className="rotate-180" />
                 กลับหน้าก่อน
               </Button>
-              <Button
-                onClick={() => {
-                  if (!selectedVehicle) {
-                    setFormError("กรุณาเลือกรถยนต์ก่อนดำเนินการต่อ");
-                    return;
-                  }
-                  setFormError("");
-                  setStep(2);
-                }}
-                disabled={!selectedVehicle}
-              >
-                ถัดไป: พนักงานขับรถยนต์ <Icon name="arrow" size={16} />
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={saveDraft}>
+                  <Icon name="document" size={16} />
+                  บันทึก
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!selectedVehicle) {
+                      setFormError("กรุณาเลือกรถยนต์ก่อนดำเนินการต่อ");
+                      return;
+                    }
+                    setFormError("");
+                    onDraftChange(getCurrentDraft(2));
+                    setStep(2);
+                  }}
+                  disabled={!selectedVehicle}
+                >
+                  ถัดไป: พนักงานขับรถยนต์ <Icon name="arrow" size={16} />
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -791,7 +911,7 @@ export function BookingPage({
                     {selectedVehicle?.carrier ?? "ยังไม่ได้เลือกรถ"}
                   </p>
                 </div>
-                <span className="text-xs text-slate-400">ขั้นตอน 3 จาก 4</span>
+                <span className="text-xs text-slate-400">ขั้นตอน 3 จาก 3</span>
               </div>
 
               <fieldset>
@@ -891,19 +1011,28 @@ export function BookingPage({
                 </p>
               )}
             </div>
-            <div className="flex justify-between border-t border-slate-100 px-5 py-4 sm:px-7">
+            <div className="flex flex-wrap justify-between gap-3 border-t border-slate-100 px-5 py-4 sm:px-7">
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  onDraftChange(getCurrentDraft(1));
+                  setStep(1);
+                }}
               >
                 <Icon name="arrow" size={16} className="rotate-180" />
                 กลับหน้าก่อน
               </Button>
-              <Button type="submit" disabled={!selectedDriver}>
-                <Icon name="check" size={16} />
-                บันทึกข้อมูล
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={saveDraft}>
+                  <Icon name="document" size={16} />
+                  บันทึก
+                </Button>
+                <Button type="submit" disabled={!selectedDriver}>
+                  <Icon name="check" size={16} />
+                  บันทึกข้อมูล
+                </Button>
+              </div>
             </div>
           </form>
         )}
@@ -925,7 +1054,7 @@ export function BookingPage({
               </div>
               <Button variant="secondary" onClick={startNewBooking}>
                 <Icon name="plus" size={16} />
-                สร้างใบนำส่งรายการใหม่
+                กลับไปรายการใบนำส่ง
               </Button>
             </div>
             <DeliverySlip booking={createdBooking} />

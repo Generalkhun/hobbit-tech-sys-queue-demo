@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { getAllowedPages } from "@/app/data/access";
 import { Icon, type IconName } from "@/app/components/icons";
-import { Button } from "@/app/components/ui";
 import type { DemoUser, PageKey } from "@/app/types/queue";
 
 interface NavigationItem {
@@ -118,20 +117,16 @@ export function AppShell({
   page,
   onNavigate,
   onLogout,
-  onCreateBooking,
   children,
 }: {
   user: DemoUser;
   page: PageKey;
   onNavigate: (page: PageKey) => void;
   onLogout: () => void;
-  onCreateBooking: () => void;
   children: ReactNode;
 }) {
   const activePage = pageDetails[page];
   const allowedPages = getAllowedPages(user.role);
-  const canCreateBooking =
-    user.role !== "security" && user.role !== "operations";
 
   return (
     <div className="min-h-screen bg-[#f4f8fa] lg:flex">
@@ -238,15 +233,6 @@ export function AppShell({
               <span className="hidden text-xs text-slate-500 md:block">
                 อังคาร 27 ต.ค. 2569
               </span>
-              {canCreateBooking && (
-                <Button
-                  onClick={onCreateBooking}
-                  className="hidden sm:inline-flex"
-                >
-                  <Icon name="plus" size={17} />
-                  สร้างใบนำส่ง
-                </Button>
-              )}
               <div className="grid h-9 w-9 place-items-center rounded-full bg-sys-100 text-xs font-bold text-sys-700 sm:hidden">
                 {user.initials}
               </div>

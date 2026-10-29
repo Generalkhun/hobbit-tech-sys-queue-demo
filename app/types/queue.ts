@@ -54,6 +54,8 @@ export interface QueueBooking {
   broker: string;
   plantId: string;
   grade: string;
+  heavyWeightKg: number;
+  lightWeightKg: number;
   estimatedTons: number;
   date: string;
   timeSlot: string;
@@ -64,6 +66,24 @@ export interface QueueBooking {
   ticketName: string;
   createdAt: string;
   schedulingReason?: string;
+}
+
+export interface DeliveryDraft {
+  id: string;
+  step: 0 | 1 | 2;
+  retailer: string;
+  broker: string;
+  grade: string;
+  date: string;
+  timeSlot: string;
+  heavyWeightKg: string;
+  lightWeightKg: string;
+  ticketName: string;
+  driverId: string;
+  employmentType: DriverRecord["employmentType"];
+  carrier: string;
+  plate: string;
+  driver: string;
 }
 
 export interface BlacklistRecord {

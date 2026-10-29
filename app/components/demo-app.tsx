@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { canAccessPage } from "@/app/data/access";
 import { getBlacklistReason, hasCurrentPolicyAcknowledgement } from "@/app/data/eligibility";
 import {
@@ -17,7 +17,9 @@ import {
   mockDrivers,
   mockPlans,
   policyVersion,
+  demoDate,
 } from "@/app/data/mock-data";
+import { bookableSlots } from "@/app/data/slot-time";
 import { canMoveBookingToPlant, schedulePlant } from "@/app/data/scheduling";
 import {
   copyDateConfig,
@@ -49,6 +51,7 @@ import { SettingsPage } from "@/app/components/settings-page";
 import { Panel } from "@/app/components/ui";
 import type {
   BookingStatus,
+  DeliveryDraft,
   DemoUser,
   DriverRecord,
   PageKey,
@@ -59,6 +62,9 @@ export function DemoApp() {
   const [user, setUser] = useState<DemoUser | null>(null);
   const [page, setPage] = useState<PageKey>("overview");
   const [bookings, setBookings] = useState(mockBookings);
+  const [deliveryDrafts, setDeliveryDrafts] = useState<DeliveryDraft[]>([]);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const [viewBookingId, setViewBookingId] = useState<string | null>(null);
   const [plans, setPlans] = useState(mockPlans);
   const [draftConfig, setDraftConfig] = useState(emptyCapacityConfig);
   const [savedConfig, setSavedConfig] = useState(emptyCapacityConfig);
@@ -78,6 +84,19 @@ export function DemoApp() {
     getPolicyStorageError,
     () => "",
   );
+  const updateDeliveryDraft = useCallback((updatedDraft: DeliveryDraft) => {
+    setDeliveryDrafts((current) =>
+      current.map((draft) =>
+        draft.id === updatedDraft.id ? updatedDraft : draft,
+      ),
+    );
+  }, []);
+
+  const completeDeliveryDraft = useCallback((draftId: string) => {
+    setDeliveryDrafts((current) =>
+      current.filter((draft) => draft.id !== draftId),
+    );
+  }, []);
 
   if (!user) {
     return <LoginScreen onLogin={setUser} />;
@@ -87,6 +106,52 @@ export function DemoApp() {
     if (user && canAccessPage(user.role, nextPage)) {
       setPage(nextPage);
     }
+  }
+
+  function startNewDeliveryDraft() {
+    if (!user || user.role === "security" || user.role === "operations") return;
+    const firstDriver = drivers.find((driver) => driver.approved);
+    const draft: DeliveryDraft = {
+      id: `DRAFT-${Date.now().toString(36).toUpperCase()}`,
+      step: 0,
+      retailer:
+        user.role === "retailer" ? "ร้านสมชายค้าเหล็ก" : "ร้านเจริญทรัพย์",
+      broker:
+        user.role === "broker" ? "บริษัท เอส.เอส. เมทัล" : "—",
+      grade: "Bundle SY",
+      date: demoDate,
+      timeSlot: bookableSlots[1],
+      heavyWeightKg: "40000",
+      lightWeightKg: "12000",
+      ticketName: "ใบชั่งต้นทาง_ตัวอย่าง.pdf",
+      driverId: "",
+      employmentType: "contractor",
+      carrier: firstDriver?.carrier ?? "",
+      plate: firstDriver?.plate ?? "",
+      driver: "",
+    };
+    setDeliveryDrafts((current) => [draft, ...current]);
+    setActiveDraftId(draft.id);
+    setViewBookingId(null);
+    navigateTo("booking");
+  }
+
+  function editDeliveryDraft(draft: DeliveryDraft) {
+    setActiveDraftId(draft.id);
+    setViewBookingId(null);
+    navigateTo("booking");
+  }
+
+  function viewDeliveryBooking(booking: QueueBooking) {
+    setActiveDraftId(null);
+    setViewBookingId(booking.id);
+    navigateTo("booking");
+  }
+
+  function returnToDeliveryNotes() {
+    setActiveDraftId(null);
+    setViewBookingId(null);
+    navigateTo("booking");
   }
 
   function updateBookingStatus(
@@ -342,22 +407,68 @@ export function DemoApp() {
       />
     );
   } else if (page === "booking") {
-    content = (
-      <BookingPage
-        user={user}
-        drivers={drivers}
-        blacklist={mockBlacklist}
-        plans={plans}
-        bookings={bookings}
-        resolveCapacity={resolveCapacity}
-        acknowledgements={acknowledgements}
-        onCreate={createBooking}
-        onGoToRegistry={() => navigateTo("drivers")}
-        onAcknowledgePolicies={(shopName) => {
-          return acknowledgeShopPolicies(shopName, user.id);
-        }}
-      />
+    const activeDraft = deliveryDrafts.find(
+      (draft) => draft.id === activeDraftId,
     );
+    const viewedBooking = bookings.find(
+      (booking) => booking.id === viewBookingId,
+    );
+    const formDraft =
+      activeDraft ??
+      (viewedBooking
+        ? {
+            id: `view-${viewedBooking.id}`,
+            step: 2 as const,
+            retailer: viewedBooking.retailer,
+            broker: viewedBooking.broker,
+            grade: viewedBooking.grade,
+            date: viewedBooking.date,
+            timeSlot: viewedBooking.timeSlot,
+            heavyWeightKg: String(viewedBooking.heavyWeightKg),
+            lightWeightKg: String(viewedBooking.lightWeightKg),
+            ticketName: viewedBooking.ticketName,
+            driverId: "",
+            employmentType: "contractor" as const,
+            carrier: viewedBooking.carrier,
+            plate: viewedBooking.plate,
+            driver: viewedBooking.driver,
+          } satisfies DeliveryDraft
+        : null);
+    if (formDraft) {
+      content = (
+        <BookingPage
+          key={formDraft.id}
+          user={user}
+          drivers={drivers}
+          blacklist={mockBlacklist}
+          plans={plans}
+          bookings={bookings}
+          resolveCapacity={resolveCapacity}
+          acknowledgements={acknowledgements}
+          onCreate={createBooking}
+          onGoToRegistry={() => navigateTo("drivers")}
+          onAcknowledgePolicies={(shopName) => {
+            return acknowledgeShopPolicies(shopName, user.id);
+          }}
+          draft={formDraft}
+          viewBooking={viewedBooking}
+          onDraftChange={updateDeliveryDraft}
+          onCompleteDraft={completeDeliveryDraft}
+          onReturnToList={returnToDeliveryNotes}
+        />
+      );
+    } else {
+      content = (
+        <DeliveryNotesPage
+          bookings={bookings}
+          drafts={deliveryDrafts}
+          canCreateBooking={user.role !== "security" && user.role !== "operations"}
+          onCreateBooking={startNewDeliveryDraft}
+          onSelectDraft={editDeliveryDraft}
+          onSelectBooking={viewDeliveryBooking}
+        />
+      );
+    }
   } else if (page === "operations") {
     content = (
       <CallingPage
@@ -378,7 +489,13 @@ export function DemoApp() {
     content = (
       <DeliveryNotesPage
         bookings={bookings}
-        onCreateBooking={() => navigateTo("booking")}
+        drafts={deliveryDrafts}
+        canCreateBooking={
+          user.role !== "security" && user.role !== "operations"
+        }
+        onCreateBooking={startNewDeliveryDraft}
+        onSelectDraft={editDeliveryDraft}
+        onSelectBooking={viewDeliveryBooking}
       />
     );
   } else if (page === "queue-check") {
@@ -417,8 +534,9 @@ export function DemoApp() {
       onLogout={() => {
         setUser(null);
         setPage("overview");
+        setActiveDraftId(null);
+        setViewBookingId(null);
       }}
-      onCreateBooking={() => navigateTo("booking")}
     >
       {policyStorageError && (
         <p
