@@ -8,15 +8,6 @@ export const directoryDefinitions: Record<
   DirectoryPageKey,
   DirectoryDefinition
 > = {
-  vehicles: {
-    page: "vehicles",
-    title: "รถยนต์",
-    description: "รถขนส่งที่ลงทะเบียนภายใต้บริษัทและสถานะอนุมัติ",
-    noun: "รถยนต์",
-    icon: "truck",
-    columns: ["บริษัทขนส่ง", "ผู้ขับที่ลงทะเบียน"],
-    records: directoryRecords["vehicles"],
-  },
   provinces: {
     page: "provinces",
     title: "จังหวัด",

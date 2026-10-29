@@ -8,13 +8,15 @@ import { DriverPortalPage } from "@/app/components/driver-portal-page";
 import { OverviewPage } from "@/app/components/overview-page";
 import { PlansPage } from "@/app/components/plans-page";
 import { QueueCheckPage } from "@/app/components/queue-check-page";
-import { RegistryPage } from "@/app/components/registry-page";
+import { DriversPage } from "@/app/components/registry/drivers-page";
+import { VehiclesPage } from "@/app/components/registry/vehicles-page";
 import { SecurityPage } from "@/app/components/security-page";
 import { SellersPage } from "@/app/components/sellers-page";
 import { SettingsPage } from "@/app/components/settings-page";
 import { ShopsPage } from "@/app/components/shops-page";
 import { Panel } from "@/app/components/ui";
 import { directoryDefinitions, isDirectoryPage } from "@/app/data/directories";
+import { directoryRecords } from "@/app/data/mocks/directories";
 import { mockBlacklist } from "@/app/data/mock-data";
 import { acknowledgeShopPolicies } from "@/app/data/policy-store";
 import { canManagePlans, getQueueShortcut } from "@/app/data/overview-queue";
@@ -22,6 +24,7 @@ import type { useCapacityConfig } from "@/app/hooks/use-capacity-config";
 import type { useDeliveryDrafts } from "@/app/hooks/use-delivery-drafts";
 import type { useDriverCheckin } from "@/app/hooks/use-driver-checkin";
 import type { useDriverRegistry } from "@/app/hooks/use-driver-registry";
+import type { useVehicleRegistry } from "@/app/hooks/use-vehicle-registry";
 import type { useQueueBookings } from "@/app/hooks/use-queue-bookings";
 import type { useSellerDirectory } from "@/app/hooks/use-seller-directory";
 import type { DemoUser, PageKey, PolicyAcknowledgement } from "@/app/types/queue";
@@ -33,6 +36,7 @@ export interface PageContentProps {
   onNavigate: (page: PageKey) => void;
   queue: ReturnType<typeof useQueueBookings>;
   registry: ReturnType<typeof useDriverRegistry>;
+  vehicleRegistry: ReturnType<typeof useVehicleRegistry>;
   capacity: ReturnType<typeof useCapacityConfig>;
   sellerDirectory: ReturnType<typeof useSellerDirectory>;
   deliveryDrafts: ReturnType<typeof useDeliveryDrafts>;
@@ -60,7 +64,10 @@ export function PageContent(props: PageContentProps) {
   const { user, page, acknowledgements, onNavigate } = props;
   const { queue, registry, capacity, sellerDirectory, deliveryDrafts, driverCheckin } =
     props;
+  const { vehicleRegistry } = props;
   const isAdmin = user.role === "admin";
+  const shopNames = sellerDirectory.shops.map((shop) => shop.name);
+  const vehicleTypeNames = directoryRecords["vehicle-types"].map((type) => type.name);
 
   if (page === "driver-pass" || page === "driver-checkin" || page === "driver-queue") {
     const currentDriver = registry.drivers.find((d) => d.id === user.driverId);
@@ -169,11 +176,25 @@ export function PageContent(props: PageContentProps) {
       return <QueueCheckPage bookings={queue.bookings} />;
     case "drivers":
       return (
-        <RegistryPage
-          user={user}
+        <DriversPage
           drivers={registry.drivers}
-          onRegister={registry.registerDriver}
-          onApprovalChange={registry.updateDriverApproval}
+          records={registry.statusRecords}
+          shopNames={shopNames}
+          isAdmin={isAdmin}
+          onSave={registry.saveDriver}
+          onStatusChange={registry.changeDriverStatus}
+        />
+      );
+    case "vehicles":
+      return (
+        <VehiclesPage
+          vehicles={vehicleRegistry.vehicles}
+          records={vehicleRegistry.statusRecords}
+          shopNames={shopNames}
+          vehicleTypes={vehicleTypeNames}
+          isAdmin={isAdmin}
+          onSave={vehicleRegistry.saveVehicle}
+          onStatusChange={vehicleRegistry.changeVehicleStatus}
         />
       );
     case "settings":
@@ -200,6 +221,7 @@ export function PageContent(props: PageContentProps) {
           shops={sellerDirectory.shops}
           moves={sellerDirectory.moves}
           canManage={isAdmin}
+          onAddShop={sellerDirectory.addShop}
           onMoveShop={sellerDirectory.moveShop}
           onUpdateProfile={sellerDirectory.updateShopProfile}
         />

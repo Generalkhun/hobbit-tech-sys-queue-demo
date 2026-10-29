@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { ShopCreatePage } from "@/app/components/shops/shop-create-page";
 import { ShopDetail } from "@/app/components/shops/shop-detail";
 import { ShopList } from "@/app/components/shops/shop-list";
 import type {
+  NewShopInput,
+  ProfilePatch,
   Seller,
-  SellerProfile,
   SellerShop,
   ShopMoveInput,
   ShopMoveRecord,
@@ -16,6 +18,7 @@ export function ShopsPage({
   shops,
   moves,
   canManage,
+  onAddShop,
   onMoveShop,
   onUpdateProfile,
 }: {
@@ -23,14 +26,36 @@ export function ShopsPage({
   shops: SellerShop[];
   moves: ShopMoveRecord[];
   canManage: boolean;
+  onAddShop: (input: NewShopInput) => void;
   onMoveShop: (input: ShopMoveInput) => void;
-  onUpdateProfile: (shopId: string, profile: SellerProfile) => void;
+  onUpdateProfile: (shopId: string, profile: ProfilePatch) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const shop = shops.find((item) => item.id === selectedId);
 
+  if (creating) {
+    return (
+      <ShopCreatePage
+        sellers={sellers}
+        onCancel={() => setCreating(false)}
+        onSubmit={(input) => {
+          onAddShop(input);
+          setCreating(false);
+        }}
+      />
+    );
+  }
   if (!shop) {
-    return <ShopList sellers={sellers} shops={shops} onManage={setSelectedId} />;
+    return (
+      <ShopList
+        sellers={sellers}
+        shops={shops}
+        canManage={canManage}
+        onCreate={() => setCreating(true)}
+        onManage={setSelectedId}
+      />
+    );
   }
   return (
     <ShopDetail

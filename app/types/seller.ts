@@ -11,27 +11,45 @@ export interface SellerProfile {
   description: string;
 }
 
-export interface Seller extends SellerProfile {
+/** ตำแหน่งที่ตั้งของผู้ขาย/ร้านค้า */
+export interface SellerLocation {
+  province: string;
+  address: string;
+  /** รูปถ่ายหน้าร้าน/สำนักงาน */
+  photo?: string;
+}
+
+export type ProfilePatch = Partial<SellerProfile & SellerLocation>;
+
+export interface Seller extends SellerProfile, SellerLocation {
   id: string;
   name: string;
   coordinator: string;
   phone: string;
   email: string;
-  address: string;
   taxId: string;
   status: SellerStatus;
 }
 
-export interface NewSellerInput {
+export interface NewSellerInput extends SellerProfile, SellerLocation {
   name: string;
   coordinator: string;
   phone: string;
+  email: string;
+  taxId: string;
+  /** ร้านค้าที่ย้ายเข้าสังกัดผู้ขายใหม่ (จากผู้ขายอื่นหรือจากกลุ่มไม่มีผู้ขาย) */
+  shopIds: string[];
 }
 
-export interface SellerShop extends SellerProfile {
+export interface NewShopInput extends SellerProfile, SellerLocation {
+  name: string;
+  /** null = ไม่สังกัดผู้ขาย */
+  sellerId: string | null;
+}
+
+export interface SellerShop extends SellerProfile, SellerLocation {
   id: string;
   name: string;
-  province: string;
   /** null = ร้านค้าที่ไม่มีผู้ขาย */
   sellerId: string | null;
 }

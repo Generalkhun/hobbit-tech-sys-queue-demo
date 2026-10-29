@@ -3,28 +3,26 @@
 import { useMemo, useState } from "react";
 import { Avatar } from "@/app/components/avatar";
 import { Icon } from "@/app/components/icons";
-import { SellerForm } from "@/app/components/sellers/seller-form";
 import { EmptyState } from "@/app/components/shared/empty-state";
 import { ManageButton } from "@/app/components/shared/manage-button";
 import { SearchInput } from "@/app/components/shared/search-input";
 import { SectionHeader } from "@/app/components/shared/section-header";
 import { SellerStatusBadge } from "@/app/components/shared/seller-status-badge";
 import { Button, Panel } from "@/app/components/ui";
-import type { NewSellerInput, Seller } from "@/app/types/seller";
+import type { Seller } from "@/app/types/seller";
 
 export function SellerList({
   sellers,
   canManage,
-  onAddSeller,
+  onCreate,
   onManage,
 }: {
   sellers: Seller[];
   canManage: boolean;
-  onAddSeller: (input: NewSellerInput) => void;
+  onCreate: () => void;
   onManage: (sellerId: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const [showForm, setShowForm] = useState(false);
 
   const filtered = useMemo(
     () =>
@@ -44,21 +42,13 @@ export function SellerList({
         description="จัดการผู้ขาย ร้านค้าย่อยในสังกัด และการระงับสิทธิ์จองคิว"
         action={
           canManage && (
-            <Button onClick={() => setShowForm((open) => !open)}>
-              <Icon name={showForm ? "close" : "plus"} size={16} />
-              {showForm ? "ปิดแบบฟอร์ม" : "เพิ่มผู้ขาย"}
+            <Button onClick={onCreate}>
+              <Icon name="plus" size={16} />
+              เพิ่มผู้ขาย
             </Button>
           )
         }
       />
-      {showForm && (
-        <SellerForm
-          onSubmit={(input) => {
-            onAddSeller(input);
-            setShowForm(false);
-          }}
-        />
-      )}
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <p className="text-xs text-slate-500">ทั้งหมด {sellers.length} ราย</p>
         <SearchInput

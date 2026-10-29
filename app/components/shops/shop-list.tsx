@@ -7,7 +7,8 @@ import { ManageButton } from "@/app/components/shared/manage-button";
 import { SearchInput } from "@/app/components/shared/search-input";
 import { SectionHeader } from "@/app/components/shared/section-header";
 import { TabBar } from "@/app/components/shared/tab-bar";
-import { Panel } from "@/app/components/ui";
+import { Icon } from "@/app/components/icons";
+import { Button, Panel } from "@/app/components/ui";
 import { getSellerName } from "@/app/data/sellers";
 import type { Seller, SellerShop } from "@/app/types/seller";
 
@@ -16,10 +17,14 @@ type Filter = "all" | "unassigned";
 export function ShopList({
   sellers,
   shops,
+  canManage,
+  onCreate,
   onManage,
 }: {
   sellers: Seller[];
   shops: SellerShop[];
+  canManage: boolean;
+  onCreate: () => void;
   onManage: (shopId: string) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -44,6 +49,14 @@ export function ShopList({
         icon="warehouse"
         title="ร้านค้าย่อย"
         description="ร้านค้าของเก่าที่มีเศษเหล็กและเป็นผู้จองรถเข้ารับ"
+        action={
+          canManage && (
+            <Button onClick={onCreate}>
+              <Icon name="plus" size={16} />
+              เพิ่มร้านค้าย่อย
+            </Button>
+          )
+        }
       />
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <TabBar

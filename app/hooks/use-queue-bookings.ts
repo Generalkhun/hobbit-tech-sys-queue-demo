@@ -6,6 +6,7 @@ import { mockBlacklist, mockBookings, mockPlans, policyVersion } from "@/app/dat
 import { canMoveBookingToPlant, schedulePlant } from "@/app/data/scheduling";
 import { createCapacityResolver, type SlotCapacityConfig } from "@/app/data/slot-capacity";
 import { getStatusTransitionError } from "@/app/data/workflow";
+import { isDriverApproved } from "@/app/data/registry";
 import type {
   BookingReceipt,
   BookingStatus,
@@ -75,7 +76,7 @@ export function useQueueBookings({
         driver.carrier === input.carrier,
     );
     if (!selectedDriver) return { error: "ไม่พบผู้ขับและรถที่เลือกในทะเบียน" };
-    if (!selectedDriver.approved) return { error: "ผู้ขับหรือรถยังไม่ได้รับการอนุมัติ" };
+    if (!isDriverApproved(selectedDriver)) return { error: "ผู้ขับหรือรถยังไม่ได้รับการอนุมัติ" };
     const blacklistReasons = getBlacklistReason(selectedDriver.id, input.plate, mockBlacklist);
     if (blacklistReasons.length > 0) {
       return { error: `ไม่สามารถสร้างใบนำส่งได้: ${blacklistReasons.join(" · ")}` };

@@ -1,3 +1,4 @@
+import type { DriverRecord } from "@/app/types/registry";
 export type UserRole =
   | "admin"
   | "operations"
@@ -114,18 +115,7 @@ export interface PolicyAcknowledgement {
   acknowledgedBy: string;
 }
 
-export interface DriverRecord {
-  id: string;
-  name: string;
-  carrier: string;
-  plate: string;
-  phone: string;
-  employmentType: "employee" | "contractor";
-  approved: boolean;
-  nationalIdMasked?: string;
-  licenseNumber?: string;
-  drivingHistory?: string;
-}
+export type { DriverRecord } from "@/app/types/registry";
 
 export interface DriverCheckinProgress {
   bookingId: string | null;

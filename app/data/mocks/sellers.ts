@@ -8,6 +8,7 @@ import type {
 export const mockSellers: Seller[] = [
   {
     id: "SL-001",
+    province: "ปทุมธานี",
     name: "บริษัท เอส.เอส. เมทัล",
     coordinator: "คุณสมศักดิ์ มั่นคง",
     phone: "02-555-0188",
@@ -19,6 +20,7 @@ export const mockSellers: Seller[] = [
   },
   {
     id: "SL-002",
+    province: "พระนครศรีอยุธยา",
     name: "หจก. รุ่งกิจรีไซเคิล",
     coordinator: "คุณวิไล รุ่งกิจ",
     phone: "081-555-1042",
@@ -30,6 +32,7 @@ export const mockSellers: Seller[] = [
   },
   {
     id: "SL-003",
+    province: "นนทบุรี",
     name: "บริษัท เมืองทองรีไซเคิล",
     coordinator: "คุณประเสริฐ ทองสุข",
     phone: "02-788-3400",
@@ -42,10 +45,10 @@ export const mockSellers: Seller[] = [
 ];
 
 export const mockSellerShops: SellerShop[] = [
-  { id: "SH-001", name: "ร้านสมชายค้าเหล็ก", province: "อยุธยา", sellerId: "SL-001", description: "ร้านรับซื้อเศษเหล็ก" },
-  { id: "SH-002", name: "ร้านเจริญทรัพย์", province: "ปทุมธานี", sellerId: "SL-001", description: "ร้านรับซื้อเศษเหล็ก" },
-  { id: "SH-003", name: "ร้านทองดี รีไซเคิล", province: "สระบุรี", sellerId: null, description: "ร้านรับซื้อเศษเหล็ก" },
-  { id: "SH-004", name: "ร้านรุ่งเรืองโลหะ", province: "ปทุมธานี", sellerId: "SL-002", description: "ร้านรับซื้อเศษเหล็ก" },
+  { id: "SH-001", address: "99/1 ม.3 ต.หอรัตนไชย อ.พระนครศรีอยุธยา", name: "ร้านสมชายค้าเหล็ก", province: "อยุธยา", sellerId: "SL-001", description: "ร้านรับซื้อเศษเหล็ก" },
+  { id: "SH-002", address: "7 ถ.รังสิต-นครนายก ต.ประชาธิปัตย์ อ.ธัญบุรี", name: "ร้านเจริญทรัพย์", province: "ปทุมธานี", sellerId: "SL-001", description: "ร้านรับซื้อเศษเหล็ก" },
+  { id: "SH-003", address: "23 ม.6 ต.ปากเพรียว อ.เมืองสระบุรี", name: "ร้านทองดี รีไซเคิล", province: "สระบุรี", sellerId: null, description: "ร้านรับซื้อเศษเหล็ก" },
+  { id: "SH-004", address: "51 ถ.พหลโยธิน ต.คูคต อ.ลำลูกกา", name: "ร้านรุ่งเรืองโลหะ", province: "ปทุมธานี", sellerId: "SL-002", description: "ร้านรับซื้อเศษเหล็ก" },
 ];
 
 export const mockShopMoves: ShopMoveRecord[] = [

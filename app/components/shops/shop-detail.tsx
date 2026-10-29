@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Avatar, ProfileEditor } from "@/app/components/avatar";
 import { ShopMoveModal } from "@/app/components/shops/shop-move-modal";
 import { BackLink } from "@/app/components/shared/back-link";
+import { LocationEditor } from "@/app/components/shared/location-editor";
 import { HistoryPanel } from "@/app/components/shared/history-table";
 import { Button, Panel } from "@/app/components/ui";
 import { buildShopMoveRows, getSellerName } from "@/app/data/sellers";
 import type {
+  ProfilePatch,
   Seller,
-  SellerProfile,
   SellerShop,
   ShopMoveInput,
   ShopMoveRecord,
@@ -30,7 +31,7 @@ export function ShopDetail({
   canManage: boolean;
   onBack: () => void;
   onMoveShop: (input: ShopMoveInput) => void;
-  onUpdateProfile: (shopId: string, profile: SellerProfile) => void;
+  onUpdateProfile: (shopId: string, profile: ProfilePatch) => void;
 }) {
   const [showMove, setShowMove] = useState(false);
 
@@ -62,6 +63,13 @@ export function ShopDetail({
           onSave={(profile) => onUpdateProfile(shop.id, profile)}
         />
       </Panel>
+
+      <LocationEditor
+        key={`${shop.id}-${shop.province}-${shop.address}-${shop.photo ?? ""}`}
+        location={shop}
+        canEdit={canManage}
+        onSave={(location) => onUpdateProfile(shop.id, location)}
+      />
 
       <HistoryPanel
         title="ประวัติการย้ายผู้ขาย"

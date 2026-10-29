@@ -1,5 +1,4 @@
 export type DirectoryPageKey =
-  | "vehicles"
   | "provinces"
   | "vehicle-types";
 

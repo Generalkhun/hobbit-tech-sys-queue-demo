@@ -1,26 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { mockDrivers } from "@/app/data/mock-data";
-import type { DriverRecord } from "@/app/types/queue";
+import { mockDriverStatusRecords, mockDrivers } from "@/app/data/mocks/drivers";
+import { useRegistryStore } from "@/app/hooks/use-registry-store";
+import type { DriverRecord } from "@/app/types/registry";
 
-export function useDriverRegistry() {
-  const [drivers, setDrivers] = useState<DriverRecord[]>(mockDrivers);
-
-  const registerDriver = useCallback((driver: DriverRecord) => {
-    setDrivers((current) => [driver, ...current]);
-  }, []);
-
-  const updateDriverApproval = useCallback(
-    (driverId: string, approved: boolean) => {
-      setDrivers((current) =>
-        current.map((driver) =>
-          driver.id === driverId ? { ...driver, approved } : driver,
-        ),
-      );
-    },
-    [],
-  );
-
-  return { drivers, registerDriver, updateDriverApproval };
+export function useDriverRegistry(actorName: string) {
+  const store = useRegistryStore<DriverRecord>(mockDrivers, mockDriverStatusRecords, actorName);
+  return {
+    drivers: store.items,
+    statusRecords: store.records,
+    saveDriver: store.save,
+    changeDriverStatus: store.changeStatus,
+  };
 }

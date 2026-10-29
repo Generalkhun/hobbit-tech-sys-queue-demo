@@ -1,5 +1,6 @@
 import { demoDate } from "@/app/data/mocks/demo-date";
 import { bookableSlots } from "@/app/data/slot-time";
+import { isDriverApproved } from "@/app/data/registry";
 import type {
   DeliveryDraft,
   DemoUser,
@@ -20,7 +21,7 @@ export function createDeliveryDraft(
   drivers: DriverRecord[],
   now: number = Date.now(),
 ): DeliveryDraft {
-  const firstDriver = drivers.find((driver) => driver.approved);
+  const firstDriver = drivers.find(isDriverApproved);
   return {
     id: `DRAFT-${now.toString(36).toUpperCase()}`,
     step: 0,

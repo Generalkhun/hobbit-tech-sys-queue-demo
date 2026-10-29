@@ -2,12 +2,20 @@
 
 import { useCallback, useState } from "react";
 import { mockSellerShops, mockSellers, mockShopMoves, mockSuspensions } from "@/app/data/mocks/sellers";
-import { createShopMove, getSellerSuspensionBlock } from "@/app/data/sellers";
+import {
+  createSeller,
+  createSellerIntakeMoves,
+  createShop,
+  createShopIntakeMove,
+  createShopMove,
+  getSellerSuspensionBlock,
+} from "@/app/data/sellers";
 import type { NoteWithAttachments } from "@/app/types/common";
 import type {
   NewSellerInput,
+  NewShopInput,
+  ProfilePatch,
   Seller,
-  SellerProfile,
   SellerShop,
   ShopMoveInput,
   ShopMoveRecord,
@@ -21,20 +29,32 @@ export function useSellerDirectory(actorName: string) {
   const [suspensions, setSuspensions] =
     useState<SuspensionRecord[]>(mockSuspensions);
 
-  const addSeller = useCallback((input: NewSellerInput) => {
-    setSellers((current) => [
-      ...current,
-      {
-        ...input,
-        id: `SL-${String(current.length + 1).padStart(3, "0")}`,
-        email: "—",
-        address: "—",
-        taxId: "—",
-        description: "",
-        status: "active",
-      },
-    ]);
-  }, []);
+  const addSeller = useCallback(
+    (input: NewSellerInput) => {
+      const seller = createSeller(input, sellers);
+      const intake = createSellerIntakeMoves(seller, input.shopIds, shops, actorName);
+      setSellers((current) => [...current, seller]);
+      setShops((current) =>
+        current.map((shop) =>
+          intake.some((move) => move.shopId === shop.id)
+            ? { ...shop, sellerId: seller.id }
+            : shop,
+        ),
+      );
+      setMoves((current) => [...intake, ...current]);
+    },
+    [sellers, shops, actorName],
+  );
+
+  const addShop = useCallback(
+    (input: NewShopInput) => {
+      const shop = createShop(input, shops);
+      const move = createShopIntakeMove(shop, actorName);
+      setShops((current) => [...current, shop]);
+      if (move) setMoves((current) => [move, ...current]);
+    },
+    [shops, actorName],
+  );
 
   const setSellerSuspended = useCallback(
     (sellerId: string, suspended: boolean, value: NoteWithAttachments) => {
@@ -79,7 +99,7 @@ export function useSellerDirectory(actorName: string) {
   );
 
   const updateSellerProfile = useCallback(
-    (sellerId: string, profile: SellerProfile) => {
+    (sellerId: string, profile: ProfilePatch) => {
       setSellers((current) =>
         current.map((item) =>
           item.id === sellerId ? { ...item, ...profile } : item,
@@ -90,7 +110,7 @@ export function useSellerDirectory(actorName: string) {
   );
 
   const updateShopProfile = useCallback(
-    (shopId: string, profile: SellerProfile) => {
+    (shopId: string, profile: ProfilePatch) => {
       setShops((current) =>
         current.map((item) =>
           item.id === shopId ? { ...item, ...profile } : item,
@@ -112,6 +132,7 @@ export function useSellerDirectory(actorName: string) {
     moves,
     suspensions,
     addSeller,
+    addShop,
     setSellerSuspended,
     moveShop,
     updateSellerProfile,

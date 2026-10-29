@@ -8,6 +8,7 @@ import {
 } from "@/app/components/sellers/seller-action-modal";
 import { SellerShopsPanel } from "@/app/components/sellers/seller-shops-panel";
 import { BackLink } from "@/app/components/shared/back-link";
+import { LocationEditor } from "@/app/components/shared/location-editor";
 import { HistoryPanel } from "@/app/components/shared/history-table";
 import { SellerStatusBadge } from "@/app/components/shared/seller-status-badge";
 import { TabBar } from "@/app/components/shared/tab-bar";
@@ -19,8 +20,8 @@ import {
 } from "@/app/data/sellers";
 import type { NoteWithAttachments } from "@/app/types/common";
 import type {
+  ProfilePatch,
   Seller,
-  SellerProfile,
   SellerShop,
   ShopMoveInput,
   ShopMoveRecord,
@@ -46,7 +47,7 @@ export interface SellerDetailProps {
   onSuspend: (sellerId: string, value: NoteWithAttachments) => void;
   onRelease: (sellerId: string, value: NoteWithAttachments) => void;
   onMoveShop: (input: ShopMoveInput) => void;
-  onUpdateProfile: (sellerId: string, profile: SellerProfile) => void;
+  onUpdateProfile: (sellerId: string, profile: ProfilePatch) => void;
 }
 
 export function SellerDetail({
@@ -126,7 +127,6 @@ export function SellerDetail({
               ["เบอร์ติดต่อ", seller.phone],
               ["อีเมล", seller.email],
               ["เลขประจำตัวผู้เสียภาษี", seller.taxId],
-              ["ที่อยู่", seller.address],
             ].map(([label, value]) => (
               <div key={label}>
                 <p className="text-xs text-slate-400">{label}</p>
@@ -134,6 +134,12 @@ export function SellerDetail({
               </div>
             ))}
           </Panel>
+          <LocationEditor
+            key={`${seller.id}-${seller.province}-${seller.address}-${seller.photo ?? ""}`}
+            location={seller}
+            canEdit={canManage}
+            onSave={(location) => onUpdateProfile(seller.id, location)}
+          />
           <SellerShopsPanel
             seller={seller}
             sellers={sellers}

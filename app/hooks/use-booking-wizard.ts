@@ -11,6 +11,7 @@ import {
   groupVehicles,
   ownShop,
 } from "@/app/data/booking-form";
+import { isDriverApproved } from "@/app/data/registry";
 import type {
   BookingPageProps,
   BookingStep,
@@ -52,7 +53,7 @@ export function useBookingWizard({
   });
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [dataUseAccepted, setDataUseAccepted] = useState(false);
-  const approvedDrivers = drivers.filter((driver) => driver.approved);
+  const approvedDrivers = drivers.filter(isDriverApproved);
   const vehicles = groupVehicles(approvedDrivers);
   const [vehicleKey, setVehicleKey] = useState(() =>
     draft.carrier && draft.plate
@@ -195,7 +196,7 @@ export function useBookingWizard({
       setFormError("กรุณาเลือกรถยนต์ก่อนบันทึกข้อมูล");
       return;
     }
-    if (!selectedDriver?.approved) {
+    if (!selectedDriver || !isDriverApproved(selectedDriver)) {
       setFormError("กรุณาเลือกพนักงานขับรถที่ผ่านการอนุมัติแล้ว");
       return;
     }

@@ -1,5 +1,7 @@
 import type {
   HistoryRow,
+  NewSellerInput,
+  NewShopInput,
   Seller,
   SellerShop,
   ShopMoveInput,
@@ -119,5 +121,95 @@ export function createShopMove(
     by,
     note: input.note.trim(),
     attachments: input.attachments,
+  };
+}
+
+function nextId(prefix: string, existingIds: string[]) {
+  const max = existingIds.reduce((highest, id) => {
+    const value = Number(id.slice(prefix.length + 1));
+    return Number.isFinite(value) ? Math.max(highest, value) : highest;
+  }, 0);
+  return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}
+
+export function createSeller(
+  input: NewSellerInput,
+  existingSellers: Seller[],
+): Seller {
+  const { shopIds: _shopIds, ...fields } = input;
+  void _shopIds;
+  return {
+    ...fields,
+    name: input.name.trim(),
+    coordinator: input.coordinator.trim(),
+    phone: input.phone.trim(),
+    email: input.email.trim() || "—",
+    taxId: input.taxId.trim() || "—",
+    province: input.province.trim(),
+    address: input.address.trim(),
+    description: input.description.trim(),
+    id: nextId("SL", existingSellers.map((seller) => seller.id)),
+    status: "active",
+  };
+}
+
+export function createShop(
+  input: NewShopInput,
+  existingShops: SellerShop[],
+): SellerShop {
+  const { sellerId, ...fields } = input;
+  return {
+    ...fields,
+    name: input.name.trim(),
+    province: input.province.trim(),
+    address: input.address.trim(),
+    description: input.description.trim(),
+    id: nextId("SH", existingShops.map((shop) => shop.id)),
+    sellerId,
+  };
+}
+
+/** บันทึกการย้ายร้านเข้าผู้ขายใหม่ (ข้ามร้านที่อยู่ในสังกัดนี้อยู่แล้ว) */
+export function createSellerIntakeMoves(
+  seller: Seller,
+  shopIds: string[],
+  shops: SellerShop[],
+  by: string,
+  now: Date = new Date(),
+): ShopMoveRecord[] {
+  return shopIds.flatMap((shopId, index) => {
+    const shop = shops.find((item) => item.id === shopId);
+    if (!shop || shop.sellerId === seller.id) return [];
+    return [
+      {
+        id: `MV-${now.getTime().toString(36)}-${index}`,
+        shopId,
+        fromSellerId: shop.sellerId,
+        toSellerId: seller.id,
+        at: now.toISOString(),
+        by,
+        note: "ย้ายเข้าตอนสร้างผู้ขายใหม่",
+        attachments: [],
+      },
+    ];
+  });
+}
+
+/** บันทึกการสร้างร้านค้าใหม่ที่เลือกสังกัดผู้ขาย; ไม่สังกัดจะไม่มีบันทึก */
+export function createShopIntakeMove(
+  shop: SellerShop,
+  by: string,
+  now: Date = new Date(),
+): ShopMoveRecord | null {
+  if (!shop.sellerId) return null;
+  return {
+    id: `MV-${now.getTime().toString(36)}-new`,
+    shopId: shop.id,
+    fromSellerId: null,
+    toSellerId: shop.sellerId,
+    at: now.toISOString(),
+    by,
+    note: "สร้างร้านค้าใหม่และเข้าสังกัดผู้ขาย",
+    attachments: [],
   };
 }

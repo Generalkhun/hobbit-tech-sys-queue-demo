@@ -1,3 +1,4 @@
+import { maskNationalId } from "@/app/data/registry";
 import { Button, Panel } from "@/app/components/ui";
 import { DetailGrid } from "@/app/components/driver/detail-grid";
 import { WorkDetails } from "@/app/components/driver/work-details";
@@ -31,8 +32,8 @@ export function ReviewStep({
           className="mt-4 "
           items={[
             ["ชื่อคนขับ", driver.name],
-            ["บัตรประชาชน", driver.nationalIdMasked ?? "ไม่มีข้อมูล"],
-            ["ใบอนุญาตขับขี่", driver.licenseNumber ?? "ไม่มีข้อมูล"],
+            ["บัตรประชาชน", maskNationalId(driver.nationalId)],
+            ["ใบอนุญาตขับขี่", driver.licenseNumber || "ไม่มีข้อมูล"],
             ["ประวัติคนขับ", driver.drivingHistory ?? "ไม่มีข้อมูล"],
             ["บริษัทขนส่ง", driver.carrier],
             ["ทะเบียนรถ", `${driver.plate} · ${driver.employmentType === "employee" ? "พนักงานบริษัท" : "พนักงานรับจ้าง"}`],
