@@ -3,7 +3,8 @@ export type UserRole =
   | "operations"
   | "broker"
   | "retailer"
-  | "security";
+  | "security"
+  | "driver";
 
 export type PageKey =
   | "overview"
@@ -21,7 +22,10 @@ export type PageKey =
   | "vehicles"
   | "provinces"
   | "vehicle-types"
-  | "settings";
+  | "settings"
+  | "driver-pass"
+  | "driver-checkin"
+  | "driver-queue";
 
 export type BookingStatus =
   | "confirmed"
@@ -37,6 +41,7 @@ export interface DemoUser {
   organization: string;
   role: UserRole;
   initials: string;
+  driverId?: string;
 }
 
 export interface Plant {
@@ -46,6 +51,8 @@ export interface Plant {
   dailyCapacity: number;
   reservedTons: number;
   activeQueues: number;
+  latitude: number;
+  longitude: number;
 }
 
 export interface QueueBooking {
@@ -116,6 +123,14 @@ export interface DriverRecord {
   phone: string;
   employmentType: "employee" | "contractor";
   approved: boolean;
+  nationalIdMasked?: string;
+  licenseNumber?: string;
+  drivingHistory?: string;
+}
+
+export interface DriverCheckinProgress {
+  bookingId: string | null;
+  step: "landing" | "review" | "contact" | "complete";
 }
 
 export interface PlanRow {

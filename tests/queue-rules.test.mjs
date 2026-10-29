@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { getBlacklistReason, hasCurrentPolicyAcknowledgement } from "../app/data/eligibility.ts";
+import { getAllowedPages } from "../app/data/access.ts";
 import { canMoveBookingToPlant, schedulePlant } from "../app/data/scheduling.ts";
 import {
   copyDateConfig,
@@ -56,6 +57,14 @@ const request = {
   grade: "Bundle SY",
   estimatedTons: 28,
 };
+
+test("driver role only has the three driver portal pages", () => {
+  assert.deepEqual(getAllowedPages("driver"), [
+    "driver-pass",
+    "driver-checkin",
+    "driver-queue",
+  ]);
+});
 
 test("balances open slots before applying grade-shortage priority", () => {
   const result = schedulePlant(

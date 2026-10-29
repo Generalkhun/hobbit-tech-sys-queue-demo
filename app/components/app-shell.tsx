@@ -24,6 +24,9 @@ const navigationGroups: NavigationGroup[] = [
       { id: "booking", label: "ใบนำส่งเศษเหล็ก", icon: "document" },
       { id: "operations", label: "จัดการการจัดส่ง (ปศ.)", icon: "truck" },
       { id: "security", label: "เรียกรถ (รปภ.)", icon: "shield" },
+      { id: "driver-pass", label: "ใบนำส่งสำหรับงานนี้", icon: "document" },
+      { id: "driver-checkin", label: "เช็คอิน online", icon: "map" },
+      { id: "driver-queue", label: "แถบรอคิว", icon: "clock" },
       {
         id: "operation-notes",
         label: "จัดการใบนำส่งเศษเหล็ก (ปศ.)",
@@ -109,6 +112,18 @@ const pageDetails: Record<PageKey, { title: string; subtitle: string }> = {
   settings: {
     title: "ตั้งค่า",
     subtitle: "การตั้งค่าระบบจัดการคิว SYS",
+  },
+  "driver-pass": {
+    title: "ใบนำส่งสำหรับงานนี้",
+    subtitle: "รายละเอียดงานที่รถของคุณจะใช้รับเศษเหล็ก",
+  },
+  "driver-checkin": {
+    title: "เช็คอิน online",
+    subtitle: "เริ่มเช็คอินเมื่ออยู่ในรัศมี 10 กิโลเมตรจากโรงงาน",
+  },
+  "driver-queue": {
+    title: "แถบรอคิว",
+    subtitle: "ติดตามสถานะการติดต่อกลับจาก SYS",
   },
 };
 

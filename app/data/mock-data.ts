@@ -46,6 +46,14 @@ export const demoUsers: DemoUser[] = [
     role: "security",
     initials: "สพ",
   },
+  {
+    id: "driver",
+    name: "สมชาย ใจดี",
+    organization: "ขนส่งอยุธยา · พนักงานขับรถ",
+    role: "driver",
+    initials: "สช",
+    driverId: "D-001",
+  },
 ];
 
 export const plants: Plant[] = [
@@ -56,6 +64,8 @@ export const plants: Plant[] = [
     dailyCapacity: 340,
     reservedTons: 276,
     activeQueues: 12,
+    latitude: 14.1911,
+    longitude: 100.5771,
   },
   {
     id: "SYS2",
@@ -64,6 +74,8 @@ export const plants: Plant[] = [
     dailyCapacity: 280,
     reservedTons: 192,
     activeQueues: 8,
+    latitude: 14.2267,
+    longitude: 100.7163,
   },
 ];
 
@@ -187,6 +199,9 @@ export const mockDrivers: DriverRecord[] = [
     phone: "081-234-5678",
     employmentType: "contractor",
     approved: true,
+    nationalIdMasked: "1-XXXX-XXXXX-XX-1",
+    licenseNumber: "DL-DEMO-001",
+    drivingHistory: "ไม่พบประวัติในข้อมูลทดลอง",
   },
   {
     id: "D-002",

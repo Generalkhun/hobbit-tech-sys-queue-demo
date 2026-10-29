@@ -34,12 +34,17 @@ const roleDetails: Record<
     title: "เจ้าหน้าที่รักษาความปลอดภัย",
     description: "ประจำสถานีแรก ตรวจใบนำส่งและบันทึกรถผ่านป้อม",
   },
+  driver: {
+    title: "พนักงานขับรถ",
+    description: "ดูใบนำส่ง เช็คอิน online และติดตามสถานะรอคิว",
+  },
 };
 
 export function LoginScreen({ onLogin }: { onLogin: (user: DemoUser) => void }) {
   const [selectedId, setSelectedId] = useState(demoUsers[0].id);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberAccount, setRememberAccount] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const selectedUser =
     demoUsers.find((user) => user.id === selectedId) ?? demoUsers[0];
 
@@ -120,10 +125,21 @@ export function LoginScreen({ onLogin }: { onLogin: (user: DemoUser) => void }) 
                 </span>
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                รหัสผ่าน
+              <div>
+                <div className="mb-2 flex items-center justify-between text-sm font-medium text-slate-700">
+                  <label htmlFor="demo-password">รหัสผ่าน</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword((visible) => !visible)}
+                    className="text-xs font-medium text-[#299bb3] hover:text-[#21869d]"
+                    aria-expanded={showForgotPassword}
+                  >
+                    ลืมรหัสผ่าน?
+                  </button>
+                </div>
                 <span className="flex h-11 overflow-hidden rounded-md border border-slate-300 transition focus-within:border-[#299bb3] focus-within:ring-2 focus-within:ring-[#299bb3]/15">
                   <input
+                    id="demo-password"
                     className="min-w-0 flex-1 bg-white px-3 text-sm tracking-[0.2em] text-slate-700 outline-none"
                     type={showPassword ? "text" : "password"}
                     value="sys-demo-2026"
@@ -164,7 +180,17 @@ export function LoginScreen({ onLogin }: { onLogin: (user: DemoUser) => void }) 
                     )}
                   </button>
                 </span>
-              </label>
+              </div>
+
+              {showForgotPassword && (
+                <p
+                  role="status"
+                  className="-mt-2 rounded-lg bg-sys-50 px-3 py-2 text-xs leading-5 text-sys-800"
+                >
+                  บัญชีทดลองไม่สามารถรีเซ็ตรหัสผ่านออนไลน์ได้
+                  กรุณาติดต่อผู้ดูแลระบบเพื่อขอความช่วยเหลือ
+                </p>
+              )}
             </div>
 
             <div className="mt-5 flex items-center justify-between gap-4 text-xs text-slate-600">

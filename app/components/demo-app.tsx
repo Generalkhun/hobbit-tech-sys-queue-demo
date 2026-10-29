@@ -41,6 +41,7 @@ import { BookingPage } from "@/app/components/booking-page";
 import { CallingPage } from "@/app/components/calling-page";
 import { DeliveryNotesPage } from "@/app/components/delivery-notes-page";
 import { DirectoryPage } from "@/app/components/directory-page";
+import { DriverPortalPage } from "@/app/components/driver-portal-page";
 import { LoginScreen } from "@/app/components/login-screen";
 import { OverviewPage } from "@/app/components/overview-page";
 import { PlansPage, type SavedPlanDay } from "@/app/components/plans-page";
@@ -52,6 +53,7 @@ import { Panel } from "@/app/components/ui";
 import type {
   BookingStatus,
   BookingReceipt,
+  DriverCheckinProgress,
   DeliveryDraft,
   DemoUser,
   DriverRecord,
@@ -69,6 +71,14 @@ export function DemoApp() {
   const [deliveryDrafts, setDeliveryDrafts] = useState<DeliveryDraft[]>([]);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
   const [viewBookingId, setViewBookingId] = useState<string | null>(null);
+  const [driverVerificationCodes, setDriverVerificationCodes] = useState<
+    Record<string, string>
+  >({});
+  const [driverCheckin, setDriverCheckin] = useState<DriverCheckinProgress>({
+    bookingId: null,
+    step: "landing",
+  });
+  const [driverContactPhones, setDriverContactPhones] = useState<string[]>([]);
   const [plans, setPlans] = useState(mockPlans);
   const [draftConfig, setDraftConfig] = useState(emptyCapacityConfig);
   const [savedConfig, setSavedConfig] = useState(emptyCapacityConfig);
@@ -103,7 +113,19 @@ export function DemoApp() {
   }, []);
 
   if (!user) {
-    return <LoginScreen onLogin={setUser} />;
+    return (
+      <LoginScreen
+        onLogin={(nextUser) => {
+          setUser(nextUser);
+          setPage(nextUser.role === "driver" ? "driver-pass" : "overview");
+          const driverPhone = nextUser.driverId
+            ? drivers.find((driver) => driver.id === nextUser.driverId)?.phone
+            : undefined;
+          setDriverContactPhones(driverPhone ? [driverPhone] : []);
+          setDriverCheckin({ bookingId: null, step: "landing" });
+        }}
+      />
+    );
   }
 
   function navigateTo(nextPage: PageKey) {
@@ -187,6 +209,36 @@ export function DemoApp() {
       ...current,
       [bookingId]: receipt,
     }));
+  }
+
+  function generateDriverVerificationCode(bookingId: string) {
+    if (!window.crypto?.getRandomValues) {
+      return "ไม่สามารถสร้างรหัสยืนยันแบบสุ่มได้ในเบราว์เซอร์นี้";
+    }
+    const randomValue = new Uint32Array(1);
+    window.crypto.getRandomValues(randomValue);
+    const code = String(100000 + (randomValue[0] % 900000));
+    setDriverVerificationCodes((current) => ({
+      ...current,
+      [bookingId]: code,
+    }));
+    return null;
+  }
+
+  function verifyDriverCode(bookingId: string, submittedCode: string) {
+    const expectedCode = driverVerificationCodes[bookingId];
+    if (!expectedCode) {
+      return "ยังไม่มีรหัสยืนยันสำหรับงานนี้ กรุณาติดต่อผู้ส่งเหล็ก";
+    }
+    if (submittedCode !== expectedCode) {
+      return "รหัสยืนยันไม่ถูกต้อง กรุณาตรวจสอบรหัสจากผู้ส่งเหล็ก";
+    }
+    setDriverVerificationCodes((current) => {
+      return Object.fromEntries(
+        Object.entries(current).filter(([id]) => id !== bookingId),
+      );
+    });
+    return null;
   }
 
   function createBooking(
@@ -380,7 +432,32 @@ export function DemoApp() {
   }
 
   let content;
-  if (page === "overview") {
+  if (
+    page === "driver-pass" ||
+    page === "driver-checkin" ||
+    page === "driver-queue"
+  ) {
+    const currentDriver = drivers.find(
+      (driver) => driver.id === user.driverId,
+    );
+    content = currentDriver ? (
+      <DriverPortalPage
+        page={page}
+        driver={currentDriver}
+        bookings={bookings}
+        progress={driverCheckin}
+        contactPhones={driverContactPhones}
+        onProgressChange={setDriverCheckin}
+        onContactPhonesChange={setDriverContactPhones}
+        onVerifyCode={verifyDriverCode}
+        onNavigate={navigateTo}
+      />
+    ) : (
+      <Panel className="p-6 text-sm text-rose-700">
+        ไม่พบข้อมูลพนักงานขับรถที่ผูกกับบัญชีนี้ กรุณาติดต่อผู้ดูแลระบบ
+      </Panel>
+    );
+  } else if (page === "overview") {
     content = (
       <OverviewPage
         bookings={bookings}
@@ -472,6 +549,8 @@ export function DemoApp() {
           onDraftChange={updateDeliveryDraft}
           onCompleteDraft={completeDeliveryDraft}
           onReturnToList={returnToDeliveryNotes}
+          verificationCodes={driverVerificationCodes}
+          onGenerateVerificationCode={generateDriverVerificationCode}
         />
       );
     } else {
@@ -553,6 +632,8 @@ export function DemoApp() {
         setPage("overview");
         setActiveDraftId(null);
         setViewBookingId(null);
+        setDriverCheckin({ bookingId: null, step: "landing" });
+        setDriverContactPhones([]);
       }}
     >
       {policyStorageError && (

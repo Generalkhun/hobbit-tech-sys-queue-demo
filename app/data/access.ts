@@ -36,11 +36,17 @@ const operationsPages: PageKey[] = [
 ];
 
 const securityPages: PageKey[] = ["overview", "security", "queue-check"];
+const driverPages: PageKey[] = [
+  "driver-pass",
+  "driver-checkin",
+  "driver-queue",
+];
 
 export function getAllowedPages(role: UserRole): PageKey[] {
   if (role === "admin") return adminPages;
   if (role === "operations") return operationsPages;
   if (role === "security") return securityPages;
+  if (role === "driver") return driverPages;
   return partnerPages;
 }
 
