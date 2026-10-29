@@ -5,7 +5,8 @@ import { CapacitySummary } from "@/app/components/capacity-summary";
 import { PlanSaveBar, type PlanSaveStatus } from "@/app/components/plan-save-bar";
 import { PlansFilterBar } from "@/app/components/plans-filter-bar";
 import { SlotCapacityModal } from "@/app/components/slot-capacity-modal";
-import { SlotCalendar, type SlotView } from "@/app/components/slot-calendar";
+import { SlotCalendar } from "@/app/components/slot-calendar";
+import type { SavedPlanDay, SlotView } from "@/app/types/plans";
 import { demoDate, plants } from "@/app/data/mock-data";
 import {
   getHourlyDefault,
@@ -21,11 +22,6 @@ import {
 } from "@/app/data/slot-capacity";
 import { formatSlot, slotHours } from "@/app/data/slot-time";
 import type { PlanRow, QueueBooking } from "@/app/types/queue";
-
-export interface SavedPlanDay {
-  locked: boolean;
-  savedAt: string;
-}
 
 export function PlansPage({
   plans,

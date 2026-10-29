@@ -1,16 +1,7 @@
 import { getGradeColor } from "@/app/data/grade-colors";
-import type { GradeCapacities } from "@/app/data/slot-capacity";
 import { formatHour, formatSlot, slotHours } from "@/app/data/slot-time";
 import { Panel } from "@/app/components/ui";
-
-export interface SlotView {
-  slot: string;
-  closedReason?: string;
-  manualClosure?: string;
-  capacities: GradeCapacities;
-  booked: Record<string, number>;
-  customized: boolean;
-}
+import type { SlotView } from "@/app/types/plans";
 
 export function GradeLegend({ grades }: { grades: string[] }) {
   return (

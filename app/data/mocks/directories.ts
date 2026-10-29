@@ -1,0 +1,20 @@
+import type { DirectoryPageKey, DirectoryRecord } from "@/app/types/directory";
+
+export const directoryRecords: Record<DirectoryPageKey, DirectoryRecord[]> = {
+  "vehicles": [
+    { id: "70-4380", name: "รถบรรทุก 10 ล้อ", detail: "ขนส่งอยุธยา · สมชาย ใจดี", status: "active" },
+    { id: "71-2398", name: "รถพ่วง 18 ล้อ", detail: "เอสพี ทรานสปอร์ต · วิชัย พูนผล", status: "active" },
+    { id: "SYS-006", name: "รถบรรทุก 10 ล้อ", detail: "SYS Fleet · กิตติพงษ์ สายใจ", status: "active" },
+  ],
+  "provinces": [
+    { id: "10", name: "กรุงเทพมหานคร", detail: "ภาคกลาง · 12 ร้านค้า", status: "active" },
+    { id: "13", name: "ปทุมธานี", detail: "ภาคกลาง · 18 ร้านค้า", status: "active" },
+    { id: "14", name: "พระนครศรีอยุธยา", detail: "ภาคกลาง · 24 ร้านค้า", status: "active" },
+    { id: "19", name: "สระบุรี", detail: "ภาคกลาง · 9 ร้านค้า", status: "active" },
+  ],
+  "vehicle-types": [
+    { id: "VT-01", name: "รถบรรทุก 6 ล้อ", detail: "10–15 ตัน", status: "active" },
+    { id: "VT-02", name: "รถบรรทุก 10 ล้อ", detail: "15–25 ตัน", status: "active" },
+    { id: "VT-03", name: "รถพ่วง 18 ล้อ", detail: "25–35 ตัน", status: "active" },
+  ],
+};

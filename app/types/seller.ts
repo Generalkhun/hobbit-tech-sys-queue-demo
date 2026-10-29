@@ -1,0 +1,76 @@
+import type {
+  IsoDateTime,
+  NoteAttachment,
+  NoteWithAttachments,
+} from "@/app/types/common";
+
+export type SellerStatus = "active" | "suspended";
+
+export interface SellerProfile {
+  avatar?: string;
+  description: string;
+}
+
+export interface Seller extends SellerProfile {
+  id: string;
+  name: string;
+  coordinator: string;
+  phone: string;
+  email: string;
+  address: string;
+  taxId: string;
+  status: SellerStatus;
+}
+
+export interface NewSellerInput {
+  name: string;
+  coordinator: string;
+  phone: string;
+}
+
+export interface SellerShop extends SellerProfile {
+  id: string;
+  name: string;
+  province: string;
+  /** null = ร้านค้าที่ไม่มีผู้ขาย */
+  sellerId: string | null;
+}
+
+/** บันทึกการย้ายร้านค้า 1 ครั้ง (null = ไม่มีผู้ขาย) */
+export interface ShopMoveRecord {
+  id: string;
+  shopId: string;
+  fromSellerId: string | null;
+  toSellerId: string | null;
+  at: IsoDateTime;
+  by: string;
+  note: string;
+  attachments: NoteAttachment[];
+}
+
+/** แถวประวัติสำหรับตารางแสดงผล */
+export interface HistoryRow {
+  id: string;
+  at: IsoDateTime;
+  action: string;
+  tone: "in" | "out";
+  by: string;
+  note: string;
+  attachments: NoteAttachment[];
+}
+
+export interface ShopMoveInput extends NoteWithAttachments {
+  shopId: string;
+  toSellerId: string | null;
+}
+
+/** ผลของการระงับ/ปลดระงับผู้ขาย */
+export interface SuspensionRecord {
+  id: string;
+  sellerId: string;
+  type: "suspend" | "release";
+  at: IsoDateTime;
+  by: string;
+  note: string;
+  attachments: NoteAttachment[];
+}

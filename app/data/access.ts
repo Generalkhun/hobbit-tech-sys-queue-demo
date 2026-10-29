@@ -3,7 +3,6 @@ import type { PageKey, UserRole } from "@/app/types/queue";
 const adminPages: PageKey[] = [
   "overview",
   "plans",
-  "brokers",
   "booking",
   "operations",
   "security",

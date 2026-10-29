@@ -15,6 +15,17 @@ import {
   splitEvenly,
   summarizeDay,
 } from "../app/data/slot-capacity.ts";
+import {
+  buildSellerMoveRows,
+  buildShopMoveRows,
+  createShopMove,
+  getSellerSuspensionBlock,
+} from "../app/data/sellers.ts";
+import {
+  mockSellerShops,
+  mockSellers,
+  mockShopMoves,
+} from "../app/data/mocks/sellers.ts";
 import { getStatusTransitionError } from "../app/data/workflow.ts";
 
 function plan(plantId, overrides = {}) {
@@ -316,4 +327,48 @@ test("enforces the confirmed QR-to-gate-pass status flow by role", () => {
     getStatusTransitionError("broker", "confirmed", "at-gate"),
     /ไม่มีสิทธิ์/,
   );
+});
+
+test("suspended sellers block booking for their shops and broker selection", () => {
+  const sellers = mockSellers.map((seller) =>
+    seller.id === "SL-001" ? { ...seller, status: "suspended" } : seller,
+  );
+  assert.match(
+    getSellerSuspensionBlock(sellers, mockSellerShops, "ร้านสมชายค้าเหล็ก", "—"),
+    /ถูกระงับ/,
+  );
+  assert.match(
+    getSellerSuspensionBlock(sellers, mockSellerShops, "ร้านทองดี รีไซเคิล", "บริษัท เอส.เอส. เมทัล"),
+    /ถูกระงับ/,
+  );
+  assert.equal(
+    getSellerSuspensionBlock(sellers, mockSellerShops, "ร้านรุ่งเรืองโลหะ", "—"),
+    null,
+  );
+});
+
+test("admin menu no longer includes the brokers page", () => {
+  assert.equal(getAllowedPages("admin").includes("brokers"), false);
+});
+
+test("shop moves are one record and appear on both sellers' histories", () => {
+  const shop = mockSellerShops.find((item) => item.id === "SH-002");
+  const move = createShopMove(
+    shop,
+    { shopId: "SH-002", toSellerId: "SL-002", note: " ย้าย ", attachments: [] },
+    "admin",
+  );
+  assert.equal(move.fromSellerId, "SL-001");
+  assert.equal(move.note, "ย้าย");
+  const moves = [move, ...mockShopMoves];
+  const out = buildSellerMoveRows(moves, "SL-001", mockSellers, mockSellerShops);
+  const into = buildSellerMoveRows(moves, "SL-002", mockSellers, mockSellerShops);
+  assert.match(out[0].action, /ย้ายออก · ร้านเจริญทรัพย์ \(ไป หจก/);
+  assert.match(into[0].action, /ย้ายเข้า · ร้านเจริญทรัพย์ \(จาก บริษัท เอส\.เอส/);
+  assert.equal(
+    createShopMove(shop, { shopId: "SH-002", toSellerId: "SL-001", note: "", attachments: [] }, "admin"),
+    null,
+  );
+  const unassigned = buildShopMoveRows(mockShopMoves, "SH-003", mockSellers);
+  assert.match(unassigned[0].action, /→ ไม่มีผู้ขาย/);
 });

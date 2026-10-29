@@ -9,7 +9,6 @@ export type UserRole =
 export type PageKey =
   | "overview"
   | "plans"
-  | "brokers"
   | "booking"
   | "operations"
   | "security"
