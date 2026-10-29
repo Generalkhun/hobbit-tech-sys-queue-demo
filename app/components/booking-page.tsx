@@ -2,7 +2,17 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import QRCode from "qrcode";
-import { demoDate, plants } from "@/app/data/mock-data";
+import { demoDate, policyVersion } from "@/app/data/mock-data";
+import {
+  getBlacklistReason,
+  hasCurrentPolicyAcknowledgement,
+} from "@/app/data/eligibility";
+import {
+  getPlantScheduleOptions,
+  schedulePlant,
+} from "@/app/data/scheduling";
+import type { CapacityResolver } from "@/app/data/slot-capacity";
+import { bookableSlots } from "@/app/data/slot-time";
 import { Icon, type IconName } from "@/app/components/icons";
 import {
   Button,
@@ -12,14 +22,24 @@ import {
   StatusBadge,
 } from "@/app/components/ui";
 import type {
-  BookingStatus,
+  BlacklistRecord,
   DemoUser,
   DriverRecord,
+  PlanRow,
+  PolicyAcknowledgement,
   QueueBooking,
 } from "@/app/types/queue";
 
-type NewBooking = Omit<QueueBooking, "id" | "createdAt" | "status">;
+type NewBooking = Omit<
+  QueueBooking,
+  "id" | "createdAt" | "status" | "plantId"
+>;
 type EmploymentType = DriverRecord["employmentType"];
+
+interface BookingCreationResult {
+  booking?: QueueBooking;
+  error?: string;
+}
 
 interface DeliveryVehicle {
   key: string;
@@ -28,7 +48,7 @@ interface DeliveryVehicle {
   drivers: DriverRecord[];
 }
 
-const retailerNames = [
+export const retailerNames = [
   "ร้านสมชายค้าเหล็ก",
   "ร้านเจริญทรัพย์",
   "ร้านรุ่งเรืองโลหะ",
@@ -103,10 +123,8 @@ function DeliveryQr({ value }: { value: string }) {
 
 function DeliverySlip({
   booking,
-  onStatusChange,
 }: {
   booking: QueueBooking;
-  onStatusChange: (id: string, status: BookingStatus) => void;
 }) {
   const qrValue = [
     "SYS-QUEUE",
@@ -187,15 +205,6 @@ function DeliverySlip({
             <Icon name="document" size={15} />
             พิมพ์ใบนำส่ง
           </Button>
-          {booking.status !== "at-gate" && booking.status !== "completed" && (
-            <Button
-              variant="success"
-              onClick={() => onStatusChange(booking.id, "at-gate")}
-            >
-              <Icon name="scan" size={15} />
-              จำลองสแกนที่ป้อม รปภ.
-            </Button>
-          )}
         </div>
       </div>
     </Panel>
@@ -205,30 +214,41 @@ function DeliverySlip({
 export function BookingPage({
   user,
   drivers,
+  blacklist,
+  plans,
+  bookings,
+  acknowledgements,
   onCreate,
-  onStatusChange,
   onGoToRegistry,
+  onAcknowledgePolicies,
+  resolveCapacity,
 }: {
   user: DemoUser;
   drivers: DriverRecord[];
-  onCreate: (booking: NewBooking) => QueueBooking;
-  onStatusChange: (id: string, status: BookingStatus) => void;
+  blacklist: BlacklistRecord[];
+  plans: PlanRow[];
+  bookings: QueueBooking[];
+  resolveCapacity: CapacityResolver;
+  acknowledgements: PolicyAcknowledgement[];
+  onCreate: (booking: NewBooking) => BookingCreationResult;
   onGoToRegistry: () => void;
+  onAcknowledgePolicies: (shopName: string) => boolean;
 }) {
   const ownShop = "ร้านสมชายค้าเหล็ก";
   const [step, setStep] = useState(0);
   const [retailer, setRetailer] = useState(
-    user.role === "retailer" ? ownShop : retailerNames[0],
+    user.role === "retailer" ? ownShop : retailerNames[1],
   );
   const [broker, setBroker] = useState(
     user.role === "broker" ? "บริษัท เอส.เอส. เมทัล" : "—",
   );
-  const [plantId, setPlantId] = useState(plants[0].id);
   const [grade, setGrade] = useState("Bundle SY");
   const [date, setDate] = useState(demoDate);
-  const [timeSlot, setTimeSlot] = useState("08:00–09:00");
+  const [timeSlot, setTimeSlot] = useState(bookableSlots[1]);
   const [estimatedTons, setEstimatedTons] = useState("28");
   const [ticketName, setTicketName] = useState("ใบชั่งต้นทาง_ตัวอย่าง.pdf");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [dataUseAccepted, setDataUseAccepted] = useState(false);
   const approvedDrivers = drivers.filter((driver) => driver.approved);
   const vehicles: DeliveryVehicle[] = approvedDrivers.reduce(
     (available, driver) => {
@@ -260,6 +280,24 @@ export function BookingPage({
     null,
   );
   const [formError, setFormError] = useState("");
+  const schedule = schedulePlant(
+    { date, timeSlot, grade, estimatedTons: Number(estimatedTons) },
+    plans,
+    bookings,
+    resolveCapacity,
+  );
+  const shopHasAcknowledged = hasCurrentPolicyAcknowledgement(
+    retailer,
+    policyVersion,
+    acknowledgements,
+  );
+  const scheduleOptions = getPlantScheduleOptions(
+    { date, timeSlot, grade, estimatedTons: Number(estimatedTons) },
+    plans,
+    bookings,
+    undefined,
+    resolveCapacity,
+  );
   const availableDrivers =
     selectedVehicle?.drivers.filter(
       (driver) => driver.employmentType === employmentType,
@@ -267,10 +305,35 @@ export function BookingPage({
   const selectedDriver =
     availableDrivers.find((driver) => driver.id === driverId) ??
     availableDrivers[0];
+  const selectedDriverBlacklistReasons = selectedDriver
+    ? getBlacklistReason(selectedDriver.id, selectedDriver.plate, blacklist)
+    : [];
 
   function continueToVehicle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
+    if (!shopHasAcknowledged) {
+      if (
+        user.role === "retailer" &&
+        privacyAccepted &&
+        dataUseAccepted
+      ) {
+        const saved = onAcknowledgePolicies(retailer);
+        if (!saved) {
+          setFormError("บันทึกการยอมรับนโยบายไม่สำเร็จ จึงยังดำเนินการต่อไม่ได้");
+          return;
+        }
+      } else {
+        setFormError(
+          "ร้านค้าต้องเข้าสู่ระบบและยอมรับนโยบาย PDPA ทั้งสองฉบับก่อนสร้างใบนำส่ง",
+        );
+        return;
+      }
+    }
+    if (!schedule.available) {
+      setFormError(schedule.reason);
+      return;
+    }
     setStep(1);
   }
 
@@ -297,10 +360,15 @@ export function BookingPage({
       setStep(0);
       return;
     }
-    const saved = onCreate({
+    if (selectedDriverBlacklistReasons.length > 0) {
+      setFormError(
+        `ไม่สามารถสร้างใบนำส่งได้: ${selectedDriverBlacklistReasons.join(" · ")}`,
+      );
+      return;
+    }
+    const creation = onCreate({
       retailer,
       broker,
-      plantId,
       grade,
       estimatedTons: Number(estimatedTons),
       date,
@@ -310,7 +378,12 @@ export function BookingPage({
       plate: selectedVehicle.plate,
       ticketName,
     });
-    setCreatedBooking(saved);
+    if (creation.error || !creation.booking) {
+      setFormError(creation.error ?? "ไม่สามารถสร้างใบนำส่งได้ กรุณาลองอีกครั้ง");
+      setStep(0);
+      return;
+    }
+    setCreatedBooking(creation.booking);
     setFormError("");
     setStep(3);
   }
@@ -386,7 +459,11 @@ export function BookingPage({
                   <select
                     className={inputClassName}
                     value={retailer}
-                    onChange={(event) => setRetailer(event.target.value)}
+                    onChange={(event) => {
+                      setRetailer(event.target.value);
+                      setPrivacyAccepted(false);
+                      setDataUseAccepted(false);
+                    }}
                     disabled={user.role === "retailer"}
                     required
                   >
@@ -406,20 +483,19 @@ export function BookingPage({
                     <option>หจก. รุ่งกิจรีไซเคิล</option>
                   </select>
                 </FieldLabel>
-                <FieldLabel label="โรงงานปลายทาง" required>
-                  <select
-                    className={inputClassName}
-                    value={plantId}
-                    onChange={(event) => setPlantId(event.target.value)}
-                    required
-                  >
-                    {plants.map((plant) => (
-                      <option key={plant.id} value={plant.id}>
-                        {plant.name} · {plant.location}
-                      </option>
-                    ))}
-                  </select>
-                </FieldLabel>
+                <div className="rounded-xl border border-sys-100 bg-sys-50/60 p-3.5">
+                  <p className="text-xs font-medium text-slate-500">
+                    โรงงานปลายทาง · ระบบจัดสรรอัตโนมัติ
+                  </p>
+                  <p className="mt-1.5 text-base font-bold text-sys-800">
+                    {schedule.available
+                      ? schedule.decision.plantId.replace("SYS", "SYS ")
+                      : "ยังจัดสรรไม่ได้"}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                    {schedule.available ? schedule.decision.reason : schedule.reason}
+                  </p>
+                </div>
                 <FieldLabel label="เกรดเศษเหล็ก" required>
                   <select
                     className={inputClassName}
@@ -451,13 +527,9 @@ export function BookingPage({
                     onChange={(event) => setTimeSlot(event.target.value)}
                     required
                   >
-                    <option>08:00–09:00</option>
-                    <option>09:00–10:00</option>
-                    <option>10:00–11:00</option>
-                    <option>11:00–12:00</option>
-                    <option>13:00–14:00</option>
-                    <option>14:00–15:00</option>
-                    <option>15:00–16:00</option>
+                    {bookableSlots.map((slot) => (
+                      <option key={slot}>{slot}</option>
+                    ))}
                   </select>
                 </FieldLabel>
                 <FieldLabel label="ปริมาณโดยประมาณ (ตัน)" required>
@@ -472,6 +544,76 @@ export function BookingPage({
                   />
                 </FieldLabel>
               </div>
+
+              <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4">
+                <p className="text-sm font-semibold text-slate-700">
+                  เหตุผลการจัดสรร slot นี้
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {scheduleOptions.map((option) => (
+                    <div
+                      key={option.plantId}
+                      className={`rounded-lg px-3 py-2 text-xs ${
+                        schedule.available &&
+                        schedule.decision.plantId === option.plantId
+                          ? "bg-sys-50 text-sys-800 ring-1 ring-sys-200"
+                          : "bg-slate-50 text-slate-600"
+                      }`}
+                    >
+                      <p className="font-semibold">
+                        {option.plantId.replace("SYS", "SYS ")} · รถใน slot{" "}
+                        {option.bookedVehicles}/{option.maxVehicles} คัน
+                      </p>
+                      <p className="mt-1">
+                        ขาดเกรดนี้อีก {option.gradeShortageTons} ตัน ·
+                        slot ว่าง {option.remainingVehicles} คัน
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {!shopHasAcknowledged && (
+                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                  <p className="text-sm font-semibold text-amber-900">
+                    ต้องรับทราบนโยบาย PDPA ก่อนสร้างใบนำส่ง
+                  </p>
+                  {user.role === "retailer" ? (
+                    <div className="mt-3 space-y-2.5 text-xs text-amber-900">
+                      <label className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={privacyAccepted}
+                          onChange={(event) =>
+                            setPrivacyAccepted(event.target.checked)
+                          }
+                          className="mt-0.5 accent-amber-700"
+                        />
+                        ข้าพเจ้ารับทราบประกาศคุ้มครองข้อมูลส่วนบุคคล ฉบับ {policyVersion}
+                      </label>
+                      <label className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={dataUseAccepted}
+                          onChange={(event) =>
+                            setDataUseAccepted(event.target.checked)
+                          }
+                          className="mt-0.5 accent-amber-700"
+                        />
+                        ข้าพเจ้ายอมรับการใช้ข้อมูลส่วนบุคคลตามวัตถุประสงค์และระยะเวลาที่แจ้ง ฉบับ {policyVersion}
+                      </label>
+                      <p className="text-[11px] text-amber-800">
+                        ระบบจะบันทึกบัญชีผู้ยอมรับ เวลา และเวอร์ชันของเอกสารทั้งสองฉบับ
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs leading-5 text-amber-800">
+                      กรุณาให้ผู้ใช้ร้านค้าเข้าสู่ระบบและกดยอมรับด้วยตนเองก่อน
+                      นายหน้า/Admin จึงจะสร้างใบนำส่งแทนร้านนี้ได้
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="mt-6 border-t border-slate-100 pt-5">
                 <p className="mb-2 text-sm font-medium text-slate-700">
@@ -529,14 +671,23 @@ export function BookingPage({
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {vehicles.map((vehicle) => {
                     const selected = vehicle.key === vehicleKey;
+                    const vehicleBlacklistReasons = getBlacklistReason(
+                      "",
+                      vehicle.plate,
+                      blacklist,
+                    );
+                    const isBlacklisted = vehicleBlacklistReasons.length > 0;
                     return (
                       <button
                         type="button"
                         key={vehicle.key}
                         aria-pressed={selected}
+                        disabled={isBlacklisted}
                         onClick={() => chooseVehicle(vehicle)}
                         className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition ${
-                          selected
+                          isBlacklisted
+                            ? "cursor-not-allowed border-rose-200 bg-rose-50/60 opacity-80"
+                            : selected
                             ? "border-sys-500 bg-sys-50 ring-2 ring-sys-100"
                             : "border-slate-200 hover:border-sys-200 hover:bg-slate-50"
                         }`}
@@ -561,6 +712,11 @@ export function BookingPage({
                             <Icon name="shield" size={13} />
                             อนุมัติแล้ว
                           </span>
+                          {isBlacklisted && (
+                            <span className="mt-2 block text-[11px] font-semibold text-rose-700">
+                              Blacklist: {vehicleBlacklistReasons.join(" · ")}
+                            </span>
+                          )}
                         </span>
                         <span
                           className={`mt-1 h-4 w-4 rounded-full border ${
@@ -693,6 +849,13 @@ export function BookingPage({
                       availableDrivers.map((driver) => (
                         <option key={driver.id} value={driver.id}>
                           {driver.name} · {driver.phone}
+                          {getBlacklistReason(
+                            driver.id,
+                            driver.plate,
+                            blacklist,
+                          ).length > 0
+                            ? " · ติด Blacklist"
+                            : ""}
                         </option>
                       ))
                     )}
@@ -700,8 +863,17 @@ export function BookingPage({
                 </FieldLabel>
                 <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
                   <Icon name="shield" size={13} />
-                  แสดงเฉพาะพนักงานที่ลงทะเบียนและผ่านการอนุมัติแล้ว
+                  ตรวจสอบ blacklist ของรถและผู้ขับก่อนออกใบนำส่ง
                 </p>
+                {selectedDriverBlacklistReasons.length > 0 && (
+                  <p
+                    role="alert"
+                    className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700"
+                  >
+                    ไม่สามารถใช้ผู้ขับ/รถนี้ได้:{" "}
+                    {selectedDriverBlacklistReasons.join(" · ")}
+                  </p>
+                )}
                 {availableDrivers.length === 0 && (
                   <button
                     type="button"
@@ -756,13 +928,7 @@ export function BookingPage({
                 สร้างใบนำส่งรายการใหม่
               </Button>
             </div>
-            <DeliverySlip
-              booking={createdBooking}
-              onStatusChange={(id, status) => {
-                onStatusChange(id, status);
-                setCreatedBooking({ ...createdBooking, status });
-              }}
-            />
+            <DeliverySlip booking={createdBooking} />
           </div>
         )}
       </Panel>

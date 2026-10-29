@@ -11,7 +11,7 @@ export function SecurityPage({
   onStatusChange,
 }: {
   bookings: QueueBooking[];
-  onStatusChange: (id: string, status: BookingStatus) => void;
+  onStatusChange: (id: string, status: BookingStatus) => string | null;
 }) {
   const [scanId, setScanId] = useState("");
   const [plantId, setPlantId] = useState(plants[0].id);
@@ -44,17 +44,26 @@ export function SecurityPage({
     }
     if (booking.status === "completed") {
       setNoticeKind("error");
-      setNotice("ใบนำส่งนี้บันทึกเข้าโรงงานแล้ว");
+      setNotice("ใบนำส่งนี้ออกใบนำผ่านและผ่านป้อมแล้ว");
       return;
     }
-    if (booking.status === "at-gate" || booking.status === "called") {
+    if (
+      booking.status === "at-gate" ||
+      booking.status === "call-requested" ||
+      booking.status === "called"
+    ) {
       setNoticeKind("success");
-      setNotice(`รถทะเบียน ${booking.plate} ยืนยันผ่านสถานี รปภ. แล้ว`);
+      setNotice(`รถทะเบียน ${booking.plate} ได้รับคิวและอยู่ระหว่างรอเรียกแล้ว`);
       return;
     }
-    onStatusChange(booking.id, "at-gate");
+    const transitionError = onStatusChange(booking.id, "at-gate");
+    if (transitionError) {
+      setNoticeKind("error");
+      setNotice(transitionError);
+      return;
+    }
     setNoticeKind("success");
-    setNotice(`ตรวจสอบสำเร็จ · รถทะเบียน ${booking.plate} เข้าสู่คิวโรงงานแล้ว`);
+    setNotice(`ตรวจสอบสำเร็จ · รถทะเบียน ${booking.plate} ได้รับคิวและออกไปรอเรียกแล้ว`);
     setScanId("");
   }
 
@@ -74,11 +83,13 @@ export function SecurityPage({
             color: "bg-amber-50 text-amber-600",
           },
           {
-            label: "ยืนยันผ่านป้อมแล้ว",
+            label: "สแกนรับคิวแล้ว · รถออกไปรอ",
             value: String(
               arriving.filter(
                 (booking) =>
-                  booking.status === "at-gate" || booking.status === "called",
+                  booking.status === "at-gate" ||
+                  booking.status === "call-requested" ||
+                  booking.status === "called",
               ).length,
             ),
             icon: "shield" as const,
@@ -110,9 +121,9 @@ export function SecurityPage({
               <Icon name="scan" size={19} />
             </div>
             <div>
-              <h2 className="font-bold text-sys-900">สถานีแรก · ตรวจรถเข้าโดย รปภ.</h2>
+              <h2 className="font-bold text-sys-900">สถานีแรก · สแกนใบนำส่งและจัดคิวโดย รปภ.</h2>
               <p className="mt-1 text-xs text-slate-400">
-                ตรวจเลขที่ใบนำส่ง/QR ก่อนยืนยันให้รถเข้าสู่พื้นที่โรงงาน
+                สแกนใบนำส่งเพื่อรับคิว จากนั้นรถออกไปรอจนกว่า ปศ. จะแจ้งให้ รปภ. โทรเรียก
               </p>
             </div>
           </div>
@@ -170,9 +181,9 @@ export function SecurityPage({
             <ol className="mt-4 space-y-3">
               {[
                 "ตรวจโรงงานและวันที่ตามใบนำส่ง",
-                "ตรวจทะเบียนรถและชื่อผู้ขับ",
-                "บันทึกเวลารถผ่านป้อม",
-                "ส่งคิวต่อให้ทีมปฏิบัติการเศษเหล็กเรียกรถ",
+                "สแกนใบนำส่ง ให้รถได้รับคิวและออกไปรอ",
+                "เมื่อ ปศ. แจ้ง ให้ รปภ. โทรเรียกคนขับ",
+                "ออกใบนำผ่านเมื่อรถผ่านป้อมเข้าโรงงาน",
               ].map((step, index) => (
                 <li key={step} className="flex items-start gap-3 text-xs leading-5 text-slate-600">
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white text-[10px] font-bold text-sys-700">
@@ -189,7 +200,7 @@ export function SecurityPage({
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-sys-900">
-                รายการรถที่โรงงาน {plantId.replace("SYS", "SYS ")}
+                คิวรถที่โรงงาน {plantId.replace("SYS", "SYS ")}
               </h3>
               <p className="mt-1 text-xs text-slate-400">
                 เฉพาะคิวตามวันที่จอง
@@ -200,7 +211,7 @@ export function SecurityPage({
             </span>
           </div>
           <div className="scrollbar-thin overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-xs">
+            <table className="w-full min-w-[860px] text-left text-xs">
               <thead className="bg-slate-50 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 <tr>
                   <th className="px-4 py-3">ใบนำส่ง</th>
@@ -208,6 +219,7 @@ export function SecurityPage({
                   <th className="px-4 py-3">ผู้ขับ / ทะเบียน</th>
                   <th className="px-4 py-3">เวลาจอง</th>
                   <th className="px-4 py-3">สถานะ</th>
+                  <th className="px-4 py-3 text-right">ดำเนินการ รปภ.</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -228,6 +240,44 @@ export function SecurityPage({
                     </td>
                     <td className="px-4 py-3.5">
                       <StatusBadge status={booking.status} />
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      {booking.status === "call-requested" && (
+                        <Button
+                          className="px-3 py-2 text-[11px]"
+                          onClick={() => {
+                            const error = onStatusChange(booking.id, "called");
+                            setNoticeKind(error ? "error" : "success");
+                            setNotice(
+                              error ?? `โทรเรียกรถทะเบียน ${booking.plate} แล้ว`,
+                            );
+                          }}
+                        >
+                          โทรเรียกคนขับ
+                        </Button>
+                      )}
+                      {booking.status === "called" && (
+                        <Button
+                          variant="success"
+                          className="px-3 py-2 text-[11px]"
+                          onClick={() => {
+                            const error = onStatusChange(booking.id, "completed");
+                            setNoticeKind(error ? "error" : "success");
+                            setNotice(
+                              error ??
+                                `ออกใบนำผ่าน · รถทะเบียน ${booking.plate} ผ่านป้อมแล้ว`,
+                            );
+                          }}
+                        >
+                          ออกใบนำผ่าน
+                        </Button>
+                      )}
+                      {booking.status !== "call-requested" &&
+                        booking.status !== "called" && (
+                          <span className="text-[11px] text-slate-400">
+                            รอขั้นตอนถัดไป
+                          </span>
+                        )}
                     </td>
                   </tr>
                 ))}

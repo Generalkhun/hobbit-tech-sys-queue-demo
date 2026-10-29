@@ -4,17 +4,27 @@ import { useMemo, useState } from "react";
 import { demoDate } from "@/app/data/mock-data";
 import { Icon } from "@/app/components/icons";
 import { Button, Panel, StatusBadge } from "@/app/components/ui";
-import type { BookingStatus, QueueBooking } from "@/app/types/queue";
+import type {
+  BookingStatus,
+  PlanRow,
+  QueueBooking,
+} from "@/app/types/queue";
 
 export function CallingPage({
   bookings,
+  plans,
   onStatusChange,
+  onMoveBooking,
 }: {
   bookings: QueueBooking[];
-  onStatusChange: (id: string, status: BookingStatus) => void;
+  plans: PlanRow[];
+  onStatusChange: (id: string, status: BookingStatus) => string | null;
+  onMoveBooking: (bookingId: string, targetPlantId: string) => string | null;
 }) {
   const [query, setQuery] = useState("");
   const [plantFilter, setPlantFilter] = useState("all");
+  const [moveNotice, setMoveNotice] = useState("");
+  const [moveNoticeError, setMoveNoticeError] = useState(false);
   const active = bookings.filter(
     (booking) => booking.date === demoDate && booking.status !== "completed",
   );
@@ -33,16 +43,20 @@ export function CallingPage({
         .sort((a, b) => {
           const order: Record<BookingStatus, number> = {
             "at-gate": 0,
-            called: 1,
-            waiting: 2,
-            confirmed: 3,
-            completed: 4,
+            "call-requested": 1,
+            called: 2,
+            waiting: 3,
+            confirmed: 4,
+            completed: 5,
           };
           return order[a.status] - order[b.status];
         }),
     [active, plantFilter, query],
   );
   const atGateCount = active.filter((item) => item.status === "at-gate").length;
+  const callRequestedCount = active.filter(
+    (item) => item.status === "call-requested",
+  ).length;
   const calledCount = active.filter((item) => item.status === "called").length;
   const waitingCount = active.filter(
     (item) => item.status === "waiting" || item.status === "confirmed",
@@ -50,21 +64,22 @@ export function CallingPage({
 
   function advanceQueue(booking: QueueBooking) {
     if (booking.status === "at-gate") {
-      onStatusChange(booking.id, "called");
-    } else if (booking.status === "called") {
-      onStatusChange(booking.id, "completed");
+      const error = onStatusChange(booking.id, "call-requested");
+      setMoveNoticeError(Boolean(error));
+      setMoveNotice(error ?? `แจ้ง รปภ. ให้โทรเรียกรถ ${booking.plate} แล้ว`);
     }
   }
 
   const stats = [
-    { label: "รถผ่านป้อม · รอทีมเรียก", value: atGateCount, icon: "shield" as const },
-    { label: "ทีมเรียกรถแล้ว", value: calledCount, icon: "phone" as const },
+    { label: "รับคิวแล้ว · รถออกไปรอ ปศ.", value: atGateCount, icon: "shield" as const },
+    { label: "แจ้ง รปภ. ให้โทรเรียก", value: callRequestedCount, icon: "phone" as const },
+    { label: "รปภ. โทรเรียกแล้ว · รอใบนำผ่าน", value: calledCount, icon: "clock" as const },
     { label: "รอตรวจเข้าที่สถานี รปภ.", value: waitingCount, icon: "clock" as const },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-4">
         {stats.map((stat, index) => (
           <Panel key={stat.label} className="flex items-center gap-4 p-5">
             <div
@@ -99,7 +114,7 @@ export function CallingPage({
                 จัดการการจัดส่ง · ปฏิบัติการเศษเหล็ก
               </h2>
               <p className="mt-1 text-xs text-slate-400">
-                เรียกรถหลัง รปภ. ตรวจและบันทึกรถผ่านสถานีแรกแล้ว
+                แจ้ง รปภ. ให้โทรเรียกหลังรถได้รับคิวและออกไปรอแล้ว
               </p>
             </div>
           </div>
@@ -129,6 +144,19 @@ export function CallingPage({
             </select>
           </div>
         </div>
+
+        {moveNotice && (
+          <p
+            role={moveNoticeError ? "alert" : "status"}
+            className={`mx-5 mt-4 rounded-lg px-4 py-3 text-xs sm:mx-6 ${
+              moveNoticeError
+                ? "bg-rose-50 text-rose-700"
+                : "bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {moveNotice}
+          </p>
+        )}
 
         <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[1050px] text-left text-xs">
@@ -185,18 +213,18 @@ export function CallingPage({
                         className="px-3 py-2 text-xs"
                       >
                         <Icon name="phone" size={14} />
-                        เรียกรถเข้าโรงงาน
+                        แจ้ง รปภ. ให้โทรเรียก
                       </Button>
                     )}
+                    {booking.status === "call-requested" && (
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
+                        รปภ. กำลังโทรเรียก
+                      </span>
+                    )}
                     {booking.status === "called" && (
-                      <Button
-                        variant="success"
-                        onClick={() => advanceQueue(booking)}
-                        className="px-3 py-2 text-xs"
-                      >
-                        <Icon name="check" size={14} />
-                        ยืนยันเสร็จสิ้น
-                      </Button>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg bg-violet-50 px-3 py-2 text-[11px] text-violet-700">
+                        รอรถผ่านป้อมพร้อมใบนำผ่าน
+                      </span>
                     )}
                     {(booking.status === "waiting" ||
                       booking.status === "confirmed") && (
@@ -204,6 +232,39 @@ export function CallingPage({
                         <Icon name="clock" size={13} />
                         รอ รปภ. ตรวจรถ
                       </span>
+                    )}
+                    {booking.status !== "completed" &&
+                      plans.some(
+                        (plan) =>
+                          plan.grade === booking.grade &&
+                          plan.plantId !== booking.plantId,
+                      ) && (
+                        <button
+                          type="button"
+                          className="mt-2 block w-full text-right text-[11px] font-semibold text-sys-700 hover:text-sys-900"
+                          onClick={() => {
+                            const destination = plans.find(
+                              (plan) =>
+                                plan.grade === booking.grade &&
+                                plan.plantId !== booking.plantId,
+                            )?.plantId;
+                            if (!destination) return;
+                            const error = onMoveBooking(booking.id, destination);
+                            setMoveNoticeError(Boolean(error));
+                            setMoveNotice(
+                              error ??
+                                `${booking.id} โยกจาก ${booking.plantId} ไป ${destination} แล้ว`,
+                            );
+                          }}
+                        >
+                          โยกไป{" "}
+                          {booking.plantId === "SYS1" ? "SYS 2" : "SYS 1"}
+                        </button>
+                      )}
+                    {booking.schedulingReason && (
+                      <p className="mt-2 max-w-[190px] text-right text-[10px] leading-4 text-slate-400">
+                        {booking.schedulingReason}
+                      </p>
                     )}
                   </td>
                 </tr>
@@ -217,7 +278,7 @@ export function CallingPage({
           )}
         </div>
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-[11px] text-slate-400 sm:px-6">
-          <span>แสดง {filtered.length} รายการสำหรับทีมปฏิบัติการ</span>
+          <span>แสดง {filtered.length} รายการสำหรับทีม ปศ.</span>
           <span className="flex items-center gap-1.5">
             <Icon name="refresh" size={13} />
             อัปเดตอัตโนมัติ

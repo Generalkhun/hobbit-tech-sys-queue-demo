@@ -1,19 +1,16 @@
-import { plants } from "@/app/data/mock-data";
+import { demoDate, plants } from "@/app/data/mock-data";
 import { Icon } from "@/app/components/icons";
 import { Panel, StatusBadge } from "@/app/components/ui";
 import type { PageKey, QueueBooking } from "@/app/types/queue";
 
-const slots = [
-  { time: "07:00", one: 3, two: 2 },
-  { time: "08:00", one: 7, two: 5 },
-  { time: "09:00", one: 8, two: 4 },
-  { time: "10:00", one: 5, two: 6 },
-  { time: "11:00", one: 6, two: 3 },
-  { time: "12:00", one: 3, two: 2 },
-  { time: "13:00", one: 7, two: 4 },
-  { time: "14:00", one: 5, two: 5 },
-  { time: "15:00", one: 4, two: 3 },
-  { time: "16:00", one: 2, two: 3 },
+const slotTimes = [
+  "09:00",
+  "10:00",
+  "11:00",
+  "12:00",
+  "13:00",
+  "14:00",
+  "15:00",
 ];
 
 const gradeTint = [
@@ -37,44 +34,81 @@ export function OverviewPage({
   queuePage: PageKey;
   queueActionLabel: string;
 }) {
-  const active = bookings.filter((booking) => booking.status !== "completed");
-  const waiting = bookings.filter(
+  const dailyBookings = bookings.filter((booking) => booking.date === demoDate);
+  const active = dailyBookings.filter((booking) => booking.status !== "completed");
+  const waiting = dailyBookings.filter(
     (booking) => booking.status === "waiting" || booking.status === "confirmed",
   );
-  const called = bookings.filter((booking) => booking.status === "called");
+  const called = dailyBookings.filter(
+    (booking) =>
+      booking.status === "call-requested" || booking.status === "called",
+  );
+  const passedGate = dailyBookings.filter(
+    (booking) => booking.status === "completed",
+  );
+  const slotData = slotTimes.map((time) => ({
+    time,
+    one: dailyBookings.filter(
+      (booking) => booking.plantId === "SYS1" && booking.timeSlot.startsWith(time),
+    ).length,
+    two: dailyBookings.filter(
+      (booking) => booking.plantId === "SYS2" && booking.timeSlot.startsWith(time),
+    ).length,
+  }));
+  const maximumSlotCount = Math.max(
+    1,
+    ...slotData.flatMap((slot) => [slot.one, slot.two]),
+  );
+  const gradeTotals = dailyBookings.reduce<Map<string, number>>(
+    (totals, booking) => {
+      totals.set(
+        booking.grade,
+        (totals.get(booking.grade) ?? 0) + booking.estimatedTons,
+      );
+      return totals;
+    },
+    new Map(),
+  );
+  const gradeRows = [...gradeTotals.entries()].sort(
+    ([, left], [, right]) => right - left,
+  );
+  const totalBookedTons = dailyBookings.reduce(
+    (total, booking) => total + booking.estimatedTons,
+    0,
+  );
 
   const stats = [
     {
-      label: "คิวที่จองวันนี้",
-      value: "24",
-      detail: "จาก 36 คิวทั้งหมด",
+      label: "รถที่จองวันนี้",
+      value: String(dailyBookings.length),
+      detail: `${totalBookedTons} ตันตามปริมาณประมาณการ`,
       icon: "calendar" as const,
       className: "bg-sys-50 text-sys-700",
-      trend: "+12%",
+      trend: "อัปเดตจากรายการ",
     },
     {
       label: "รถรอเรียก",
-      value: String(waiting.length + 3),
-      detail: "ทั้ง 2 โรงงาน",
+      value: String(waiting.length + dailyBookings.filter((item) => item.status === "at-gate").length),
+      detail: "รอตรวจและรอจัดคิว",
       icon: "clock" as const,
       className: "bg-amber-50 text-amber-600",
-      trend: "คิวถัดไป 09:00",
+      trend: "รอ รปภ. สแกน",
     },
     {
-      label: "เรียกรถแล้ว",
-      value: String(called.length + 2),
-      detail: "กำลังเดินทางเข้าโรงงาน",
+      label: "รอ รปภ. โทรเรียก",
+      value: String(called.length),
+      detail: "ปศ. แจ้งเรียกรถหรือ รปภ. โทรแล้ว",
       icon: "phone" as const,
       className: "bg-violet-50 text-violet-600",
-      trend: "เฉลี่ย 18 นาที",
+      trend: "ดูสถานะตามคิว",
     },
     {
-      label: "รับเข้าโรงงานแล้ว",
-      value: String(5 + bookings.filter((item) => item.status === "completed").length),
-      detail: "ตั้งแต่เริ่มกะวันนี้",
+      label: "ผ่านป้อม รปภ. แล้ว",
+      value: String(passedGate.length),
+      detail: "จบ flow ของระบบคิว",
       icon: "circle-check" as const,
       className: "bg-emerald-50 text-emerald-600",
-      trend: "+3 คัน",
+      trend: "ใบนำผ่านแล้ว",
     },
   ];
 
@@ -128,7 +162,7 @@ export function OverviewPage({
           </div>
           <div className="px-5 pb-5 pt-6 sm:px-6">
             <div className="flex h-[208px] items-end justify-between gap-1 border-b border-slate-100 pb-7 sm:gap-3">
-              {slots.map((slot) => (
+              {slotData.map((slot) => (
                 <div
                   key={slot.time}
                   className="flex h-full flex-1 flex-col items-center justify-end gap-2"
@@ -136,11 +170,15 @@ export function OverviewPage({
                   <div className="flex h-[170px] w-full max-w-[34px] items-end gap-[3px]">
                     <div
                       className="w-1/2 rounded-t-md bg-sys-500 transition-all"
-                      style={{ height: `${slot.one * 10}%` }}
+                      style={{
+                        height: `${(slot.one / maximumSlotCount) * 100}%`,
+                      }}
                     />
                     <div
                       className="w-1/2 rounded-t-md bg-sys-200 transition-all"
-                      style={{ height: `${slot.two * 10}%` }}
+                      style={{
+                        height: `${(slot.two / maximumSlotCount) * 100}%`,
+                      }}
                     />
                   </div>
                   <span className="absolute mt-[198px] text-[10px] text-slate-400">
@@ -151,9 +189,20 @@ export function OverviewPage({
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
               {plants.map((plant) => {
-                const percent = Math.round(
-                  (plant.reservedTons / plant.dailyCapacity) * 100,
+                const plantBookings = dailyBookings.filter(
+                  (booking) => booking.plantId === plant.id,
                 );
+                const reservedTons = plantBookings.reduce(
+                  (total, booking) => total + booking.estimatedTons,
+                  0,
+                );
+                const percent =
+                  plant.dailyCapacity === 0
+                    ? 0
+                    : Math.min(
+                        100,
+                        Math.round((reservedTons / plant.dailyCapacity) * 100),
+                      );
                 return (
                   <div
                     key={plant.id}
@@ -174,9 +223,9 @@ export function OverviewPage({
                       />
                     </div>
                     <p className="mt-2 text-[11px] text-slate-400">
-                      {plant.reservedTons} / {plant.dailyCapacity} ตัน
+                      {reservedTons} / {plant.dailyCapacity} ตันตามประมาณการ
                       <span className="mx-1.5">·</span>
-                      {plant.activeQueues} คิว
+                      {plantBookings.length} คิว
                     </p>
                   </div>
                 );
@@ -190,7 +239,7 @@ export function OverviewPage({
             <div>
               <h2 className="font-bold text-sys-900">สัดส่วนเกรดเหล็ก</h2>
               <p className="mt-1 text-xs text-slate-400">
-                ปริมาณจองรวม 468 ตัน
+                ปริมาณจองรวม {totalBookedTons} ตัน
               </p>
             </div>
             {canManagePlans && (
@@ -204,36 +253,36 @@ export function OverviewPage({
             )}
           </div>
           <div className="mt-6 flex h-3 overflow-hidden rounded-full">
-            {[36, 27, 18, 12, 7].map((share, index) => (
+            {gradeRows.map(([grade, tons], index) => (
               <span
-                key={share}
+                key={grade}
                 className={`${gradeTint[index]} h-full`}
-                style={{ width: `${share}%` }}
+                style={{
+                  width: `${
+                    totalBookedTons === 0 ? 0 : (tons / totalBookedTons) * 100
+                  }%`,
+                }}
               />
             ))}
           </div>
           <div className="mt-5 space-y-4">
-            {[
-              ["Bundle SY", "168 ตัน", "36%"],
-              ["Local O", "126 ตัน", "27%"],
-              ["Scrap Return SP", "84 ตัน", "18%"],
-              ["PM Scrap L1", "56 ตัน", "12%"],
-              ["อื่น ๆ", "34 ตัน", "7%"],
-            ].map((row, index) => (
+            {gradeRows.map(([grade, tons], index) => (
               <div
-                key={row[0]}
+                key={grade}
                 className="flex items-center justify-between text-xs"
               >
                 <span className="flex items-center gap-2.5 text-slate-600">
                   <span
                     className={`h-2.5 w-2.5 rounded-sm ${gradeTint[index]}`}
                   />
-                  {row[0]}
+                  {grade}
                 </span>
                 <span className="font-medium text-slate-500">
-                  {row[1]}
+                  {tons} ตัน
                   <span className="ml-3 inline-block w-8 text-right text-slate-400">
-                    {row[2]}
+                    {totalBookedTons === 0
+                      ? "0%"
+                      : `${Math.round((tons / totalBookedTons) * 100)}%`}
                   </span>
                 </span>
               </div>
@@ -242,10 +291,10 @@ export function OverviewPage({
           <div className="mt-6 rounded-xl border border-sys-100 bg-sys-50/60 p-3.5">
             <div className="flex items-center gap-2 text-xs font-semibold text-sys-800">
               <Icon name="sparkle" size={16} />
-              วางแผนได้อีก 14 คิววันนี้
+              ตัวเลขคำนวณจากใบนำส่งใน demo
             </div>
             <p className="mt-1 pl-6 text-[11px] text-slate-500">
-              SYS 2 ยังมีช่องรับช่วงบ่าย
+              ปริมาณเป็นค่าประมาณ ไม่ใช่น้ำหนักชั่งเข้า/ออก
             </p>
           </div>
         </Panel>
@@ -256,7 +305,7 @@ export function OverviewPage({
           <div>
             <h2 className="font-bold text-sys-900">รายการใบนำส่งล่าสุด</h2>
             <p className="mt-1 text-xs text-slate-400">
-              รถที่จองไว้สำหรับวันที่ 27 ตุลาคม 2569
+              รถที่จองไว้สำหรับวันที่ {new Date(`${demoDate}T00:00:00`).toLocaleDateString("th-TH")}
             </p>
           </div>
           <button
@@ -280,7 +329,7 @@ export function OverviewPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {bookings.slice(0, 5).map((booking) => (
+              {dailyBookings.slice(0, 5).map((booking) => (
                 <tr key={booking.id} className="hover:bg-slate-50/70">
                   <td className="px-6 py-3.5 font-semibold text-sys-700">
                     {booking.id}

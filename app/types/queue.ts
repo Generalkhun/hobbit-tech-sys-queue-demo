@@ -1,4 +1,9 @@
-export type UserRole = "admin" | "broker" | "retailer" | "security";
+export type UserRole =
+  | "admin"
+  | "operations"
+  | "broker"
+  | "retailer"
+  | "security";
 
 export type PageKey =
   | "overview"
@@ -21,6 +26,7 @@ export type PageKey =
 export type BookingStatus =
   | "confirmed"
   | "waiting"
+  | "call-requested"
   | "called"
   | "at-gate"
   | "completed";
@@ -57,6 +63,23 @@ export interface QueueBooking {
   status: BookingStatus;
   ticketName: string;
   createdAt: string;
+  schedulingReason?: string;
+}
+
+export interface BlacklistRecord {
+  id: string;
+  targetType: "driver" | "vehicle";
+  targetId: string;
+  displayName: string;
+  reason: string;
+}
+
+export interface PolicyAcknowledgement {
+  shopName: string;
+  documentType: "privacy-notice" | "personal-data-use";
+  policyVersion: string;
+  acknowledgedAt: string;
+  acknowledgedBy: string;
 }
 
 export interface DriverRecord {
@@ -77,4 +100,5 @@ export interface PlanRow {
   reserved: number;
   slotsOpen: number;
   window: string;
+  maxVehiclesPerSlot: number;
 }

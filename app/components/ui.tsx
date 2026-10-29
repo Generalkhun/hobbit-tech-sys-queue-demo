@@ -55,16 +55,20 @@ const statusContent: Record<
     label: "รอเรียกคิว",
     className: "bg-amber-50 text-amber-700 ring-amber-100",
   },
+  "call-requested": {
+    label: "ปศ. แจ้ง รปภ. ให้เรียกรถ",
+    className: "bg-amber-50 text-amber-700 ring-amber-100",
+  },
   called: {
-    label: "เรียกรถแล้ว",
+    label: "รปภ. โทรเรียกแล้ว",
     className: "bg-violet-50 text-violet-700 ring-violet-100",
   },
   "at-gate": {
-    label: "ถึงป้อม รปภ.",
+    label: "สแกนแล้ว · รอคิว",
     className: "bg-sky-50 text-sky-700 ring-sky-100",
   },
   completed: {
-    label: "เข้าโรงงานแล้ว",
+    label: "ผ่านป้อม · ออกใบนำผ่านแล้ว",
     className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   },
 };

@@ -1,13 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { canAccessPage } from "@/app/data/access";
+import { getBlacklistReason, hasCurrentPolicyAcknowledgement } from "@/app/data/eligibility";
+import {
+  getPolicyAcknowledgements,
+  getPolicyStorageError,
+  getServerPolicyAcknowledgements,
+  subscribeToPolicyAcknowledgements,
+  acknowledgeShopPolicies,
+} from "@/app/data/policy-store";
 import {
   demoUsers,
+  mockBlacklist,
   mockBookings,
   mockDrivers,
   mockPlans,
+  policyVersion,
 } from "@/app/data/mock-data";
+import { canMoveBookingToPlant, schedulePlant } from "@/app/data/scheduling";
+import {
+  copyDateConfig,
+  createCapacityResolver,
+  emptyCapacityConfig,
+  resetSlotCapacities,
+  setHourlyDefault,
+  setSlotCapacities,
+  setSlotClosure,
+  type GradeCapacities,
+} from "@/app/data/slot-capacity";
+import { getStatusTransitionError } from "@/app/data/workflow";
 import {
   directoryDefinitions,
   isDirectoryPage,
@@ -19,7 +41,7 @@ import { DeliveryNotesPage } from "@/app/components/delivery-notes-page";
 import { DirectoryPage } from "@/app/components/directory-page";
 import { LoginScreen } from "@/app/components/login-screen";
 import { OverviewPage } from "@/app/components/overview-page";
-import { PlansPage } from "@/app/components/plans-page";
+import { PlansPage, type SavedPlanDay } from "@/app/components/plans-page";
 import { QueueCheckPage } from "@/app/components/queue-check-page";
 import { RegistryPage } from "@/app/components/registry-page";
 import { SecurityPage } from "@/app/components/security-page";
@@ -30,7 +52,6 @@ import type {
   DemoUser,
   DriverRecord,
   PageKey,
-  PlanRow,
   QueueBooking,
 } from "@/app/types/queue";
 
@@ -39,7 +60,24 @@ export function DemoApp() {
   const [page, setPage] = useState<PageKey>("overview");
   const [bookings, setBookings] = useState(mockBookings);
   const [plans, setPlans] = useState(mockPlans);
+  const [draftConfig, setDraftConfig] = useState(emptyCapacityConfig);
+  const [savedConfig, setSavedConfig] = useState(emptyCapacityConfig);
+  const [savedDays, setSavedDays] = useState<Record<string, SavedPlanDay>>({});
+  const resolveCapacity = useMemo(
+    () => createCapacityResolver(plans, savedConfig),
+    [plans, savedConfig],
+  );
   const [drivers, setDrivers] = useState(mockDrivers);
+  const acknowledgements = useSyncExternalStore(
+    subscribeToPolicyAcknowledgements,
+    getPolicyAcknowledgements,
+    getServerPolicyAcknowledgements,
+  );
+  const policyStorageError = useSyncExternalStore(
+    subscribeToPolicyAcknowledgements,
+    getPolicyStorageError,
+    () => "",
+  );
 
   if (!user) {
     return <LoginScreen onLogin={setUser} />;
@@ -51,20 +89,82 @@ export function DemoApp() {
     }
   }
 
-  function updateBookingStatus(id: string, status: BookingStatus) {
+  function updateBookingStatus(
+    id: string,
+    status: BookingStatus,
+  ): string | null {
+    const booking = bookings.find((item) => item.id === id);
+    if (!booking) return "ไม่พบใบนำส่งที่ต้องการเปลี่ยนสถานะ";
+    if (!user) return "กรุณาเข้าสู่ระบบก่อนเปลี่ยนสถานะคิว";
+    const transitionError = getStatusTransitionError(
+      user.role,
+      booking.status,
+      status,
+    );
+    if (transitionError) return transitionError;
     setBookings((current) =>
       current.map((booking) =>
         booking.id === id ? { ...booking, status } : booking,
       ),
     );
+    return null;
   }
 
   function createBooking(
-    input: Omit<QueueBooking, "id" | "createdAt" | "status">,
-  ) {
+    input: Omit<
+      QueueBooking,
+      "id" | "createdAt" | "status" | "plantId"
+    >,
+  ): { booking?: QueueBooking; error?: string } {
+    if (
+      !hasCurrentPolicyAcknowledgement(
+        input.retailer,
+        policyVersion,
+        acknowledgements,
+      )
+    ) {
+      return { error: "ร้านค้ายังไม่ได้รับทราบนโยบาย PDPA ฉบับปัจจุบัน" };
+    }
+    const selectedDriver = drivers.find(
+      (driver) =>
+        driver.name === input.driver &&
+        driver.plate === input.plate &&
+        driver.carrier === input.carrier,
+    );
+    if (!selectedDriver) {
+      return { error: "ไม่พบผู้ขับและรถที่เลือกในทะเบียน" };
+    }
+    if (!selectedDriver.approved) {
+      return { error: "ผู้ขับหรือรถยังไม่ได้รับการอนุมัติ" };
+    }
+    const blacklistReasons = getBlacklistReason(
+      selectedDriver.id,
+      input.plate,
+      mockBlacklist,
+    );
+    if (blacklistReasons.length > 0) {
+      return {
+        error: `ไม่สามารถสร้างใบนำส่งได้: ${blacklistReasons.join(" · ")}`,
+      };
+    }
+    const schedule = schedulePlant(
+      {
+        date: input.date,
+        timeSlot: input.timeSlot,
+        grade: input.grade,
+        estimatedTons: input.estimatedTons,
+      },
+      plans,
+      bookings,
+      resolveCapacity,
+    );
+    if (!schedule.available) return { error: schedule.reason };
+
     const datePart = input.date.replaceAll("-", "").slice(2);
     const nextBooking: QueueBooking = {
       ...input,
+      plantId: schedule.decision.plantId,
+      schedulingReason: schedule.decision.reason,
       id: `SC${datePart}${String(bookings.length + 1).padStart(2, "0")}`,
       createdAt: new Date().toLocaleTimeString("th-TH", {
         hour: "2-digit",
@@ -73,15 +173,119 @@ export function DemoApp() {
       status: "confirmed",
     };
     setBookings((current) => [nextBooking, ...current]);
-    return nextBooking;
-  }
-
-  function updatePlan(planId: string, change: Partial<PlanRow>) {
     setPlans((current) =>
       current.map((plan) =>
-        plan.id === planId ? { ...plan, ...change } : plan,
+        plan.plantId === nextBooking.plantId &&
+        plan.grade === nextBooking.grade
+          ? { ...plan, reserved: plan.reserved + nextBooking.estimatedTons }
+          : plan,
       ),
     );
+    return { booking: nextBooking };
+  }
+
+  function moveBooking(bookingId: string, targetPlantId: string) {
+    const booking = bookings.find((item) => item.id === bookingId);
+    if (!booking) return "ไม่พบใบนำส่งที่ต้องการโยกโรงงาน";
+    if (booking.plantId === targetPlantId) {
+      return "รถคันนี้อยู่ที่โรงงานปลายทางดังกล่าวแล้ว";
+    }
+    if (booking.status === "completed") {
+      return "ไม่สามารถโยกรายการที่ผ่านป้อม รปภ. แล้ว";
+    }
+    const result = canMoveBookingToPlant(
+      booking,
+      targetPlantId,
+      plans,
+      bookings,
+      resolveCapacity,
+    );
+    if (!result.available) return result.reason;
+
+    setBookings((current) =>
+      current.map((item) =>
+        item.id === bookingId
+          ? {
+              ...item,
+              plantId: targetPlantId,
+              schedulingReason: result.decision.reason,
+            }
+          : item,
+      ),
+    );
+    setPlans((current) =>
+      current.map((plan) => {
+        if (
+          plan.plantId === booking.plantId &&
+          plan.grade === booking.grade
+        ) {
+          return {
+            ...plan,
+            reserved: Math.max(0, plan.reserved - booking.estimatedTons),
+          };
+        }
+        if (plan.plantId === targetPlantId && plan.grade === booking.grade) {
+          return {
+            ...plan,
+            reserved: plan.reserved + booking.estimatedTons,
+          };
+        }
+        return plan;
+      }),
+    );
+    return null;
+  }
+
+  function changeHourlyDefault(date: string, plantId: string, value: number) {
+    setDraftConfig((current) => setHourlyDefault(current, date, plantId, value));
+  }
+
+  function changeSlotCapacities(
+    date: string,
+    plantId: string,
+    slot: string,
+    capacities: GradeCapacities,
+    closureReason: string | null,
+  ) {
+    setDraftConfig((current) =>
+      setSlotClosure(
+        setSlotCapacities(current, date, plantId, slot, capacities),
+        date,
+        plantId,
+        slot,
+        closureReason,
+      ),
+    );
+  }
+
+  function resetSlotCapacity(date: string, plantId: string, slot: string) {
+    setDraftConfig((current) =>
+      resetSlotCapacities(current, date, plantId, slot),
+    );
+  }
+
+  function saveDay(date: string) {
+    setSavedConfig((current) => copyDateConfig(draftConfig, current, date));
+    setSavedDays((current) => ({
+      ...current,
+      [date]: {
+        locked: true,
+        savedAt: new Date().toLocaleTimeString("th-TH", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      },
+    }));
+  }
+
+  function editDay(date: string) {
+    setSavedDays((current) =>
+      current[date] ? { ...current, [date]: { ...current[date], locked: false } } : current,
+    );
+  }
+
+  function discardDay(date: string) {
+    setDraftConfig((current) => copyDateConfig(savedConfig, current, date));
   }
 
   function registerDriver(driver: DriverRecord) {
@@ -102,40 +306,65 @@ export function DemoApp() {
       <OverviewPage
         bookings={bookings}
         onNavigate={navigateTo}
-        canManagePlans={user.role === "admin"}
+        canManagePlans={
+          user.role === "admin" || user.role === "operations"
+        }
         queuePage={
           user.role === "security"
             ? "security"
-            : user.role === "admin"
+            : user.role === "admin" || user.role === "operations"
               ? "operations"
               : "delivery-notes"
         }
         queueActionLabel={
           user.role === "security"
             ? "ไปสถานี รปภ."
-            : user.role === "admin"
+            : user.role === "admin" || user.role === "operations"
               ? "ไปหน้าปฏิบัติการ"
               : "ดูใบนำส่ง"
         }
       />
     );
   } else if (page === "plans") {
-    content = <PlansPage plans={plans} onUpdatePlan={updatePlan} />;
+    content = (
+      <PlansPage
+        plans={plans}
+        bookings={bookings}
+        capacityConfig={draftConfig}
+        savedConfig={savedConfig}
+        savedDays={savedDays}
+        onSaveDay={saveDay}
+        onEditDay={editDay}
+        onDiscardDay={discardDay}
+        onHourlyDefaultChange={changeHourlyDefault}
+        onSlotCapacitiesChange={changeSlotCapacities}
+        onSlotCapacitiesReset={resetSlotCapacity}
+      />
+    );
   } else if (page === "booking") {
     content = (
       <BookingPage
         user={user}
         drivers={drivers}
+        blacklist={mockBlacklist}
+        plans={plans}
+        bookings={bookings}
+        resolveCapacity={resolveCapacity}
+        acknowledgements={acknowledgements}
         onCreate={createBooking}
-        onStatusChange={updateBookingStatus}
         onGoToRegistry={() => navigateTo("drivers")}
+        onAcknowledgePolicies={(shopName) => {
+          return acknowledgeShopPolicies(shopName, user.id);
+        }}
       />
     );
   } else if (page === "operations") {
     content = (
       <CallingPage
         bookings={bookings}
+        plans={plans}
         onStatusChange={updateBookingStatus}
+        onMoveBooking={moveBooking}
       />
     );
   } else if (page === "security") {
@@ -191,6 +420,14 @@ export function DemoApp() {
       }}
       onCreateBooking={() => navigateTo("booking")}
     >
+      {policyStorageError && (
+        <p
+          role="alert"
+          className="mx-auto mt-4 max-w-[1480px] px-4 text-sm text-rose-700 sm:px-7 xl:px-10"
+        >
+          {policyStorageError}
+        </p>
+      )}
       {content}
       <div className="mt-8 flex items-center justify-between border-t border-slate-200/70 pt-4 text-[10px] text-slate-400">
         <span>SYS Queue Management · Demo v1.0</span>

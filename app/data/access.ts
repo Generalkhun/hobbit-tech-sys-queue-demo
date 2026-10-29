@@ -28,10 +28,18 @@ const partnerPages: PageKey[] = [
   "vehicles",
 ];
 
+const operationsPages: PageKey[] = [
+  "overview",
+  "plans",
+  "operations",
+  "queue-check",
+];
+
 const securityPages: PageKey[] = ["overview", "security", "queue-check"];
 
 export function getAllowedPages(role: UserRole): PageKey[] {
   if (role === "admin") return adminPages;
+  if (role === "operations") return operationsPages;
   if (role === "security") return securityPages;
   return partnerPages;
 }

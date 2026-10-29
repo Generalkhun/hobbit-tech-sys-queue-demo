@@ -11,14 +11,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). On the sign-in screen, choose one of the sample roles:
 
-- **SYS admin** — adjust daily plant and grade plans, call queues, and approve driver registrations.
+- **จศ. · เจ้าหน้าที่จัดหาเศษเหล็ก** — demo administrator; view booking totals, adjust plans, call queues, and approve driver registrations.
+- **ปศ. · ทีมปฏิบัติการเศษเหล็ก** — set factory/slot vehicle capacities, call security to summon vehicles, and move bookings between plants.
 - **Scrap-metal broker** — create delivery bookings on behalf of scrap shops.
 - **Scrap shop** — book its own trucks and follow delivery status.
-- **Security guard** — use the first station to verify delivery slips and record trucks arriving at the gate. Queue calling remains with the SYS scrap operations team.
+- **Security guard** — scan a delivery pass at the first station to issue a queue, call the driver when notified by ปศ., and issue the gate pass when the vehicle enters.
 
-The app uses local mock data only. It includes two SYS plants, approved and pending drivers, sample bookings, plan adjustments, and a scannable QR payload on generated delivery slips. Use the queue screen to simulate gate scanning by entering a slip number, call a checked-in truck, and complete its visit.
+The app uses local mock data only. It includes two SYS plants, approved and pending drivers, sample bookings, plan adjustments, mock vehicle/driver blacklist entries, and a scannable QR payload on generated delivery slips. A deterministic v1 scheduler first balances vehicle counts per plant and slot, then compares grade target shortages and incoming tonnage. It rejects full slots and displays its assignment reasoning. Slot vehicle caps are configured per plant and applied across grades.
+Factory-specific rush-hour intervals from requirement page 12 are excluded from eligible receiving slots.
 
-The sidebar follows the earlier SYS navigation structure, with separate main workflow and data-management sections. Security accounts only see the dashboard, gate station, and queue lookup. The **เรียกรถ (รปภ.)** screen records the first-station gate check; **จัดการการจัดส่ง (ปศ.)** is the scrap operations team's separate queue-calling screen.
+Shop users must acknowledge both current PDPA documents before booking; brokers/admins cannot accept on a shop's behalf. The demo records policy versions, user, and timestamp in browser local storage. The queue flow is intentionally limited to the gate pass; weighing/unloading system integration is out of scope.
+
+The sidebar follows the earlier SYS navigation structure, with separate main workflow and data-management sections. Security accounts only see the dashboard, gate station, and queue lookup. The **เรียกรถ (รปภ.)** screen records the first-station queue scan and gate pass; **จัดการการจัดส่ง (ปศ.)** manages slot capacity, plant moves, and requests for security to call the driver.
 
 Creating a delivery slip follows four non-clickable progress steps: delivery details and source weigh ticket, registered vehicle selection, approved driver selection, and successful save with the generated QR delivery slip.
 
@@ -32,7 +36,10 @@ Creating a delivery slip follows four non-clickable progress steps: delivery det
 ## Checks
 
 ```bash
+npm test
 npm run lint
 npx tsc --noEmit
 npm run build
 ```
+
+`QUEUE-REQUIREMENT-TESTS.md` contains requirement-aligned end-to-end scenarios. The automated rule tests cover scheduling, capacity, blacklist validation, and current-version PDPA acknowledgement.

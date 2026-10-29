@@ -65,7 +65,7 @@ const pageDetails: Record<PageKey, { title: string; subtitle: string }> = {
   },
   operations: {
     title: "จัดการการจัดส่ง (ปศ.)",
-    subtitle: "ทีมปฏิบัติการเศษเหล็กเรียกรถหลังผ่านสถานี รปภ.",
+    subtitle: "กำหนดความจุต่อ slot และโยกรถสลับโรงงานหลัง รปภ. จัดคิว",
   },
   security: {
     title: "เรียกรถ (รปภ.)",
@@ -130,7 +130,8 @@ export function AppShell({
 }) {
   const activePage = pageDetails[page];
   const allowedPages = getAllowedPages(user.role);
-  const canCreateBooking = user.role !== "security";
+  const canCreateBooking =
+    user.role !== "security" && user.role !== "operations";
 
   return (
     <div className="min-h-screen bg-[#f4f8fa] lg:flex">
