@@ -9,6 +9,10 @@ export {
 export { mockDrivers } from "@/app/data/mocks/drivers";
 export { mockPlans } from "@/app/data/mocks/plans";
 export { mockSavedPlanDays } from "@/app/data/mocks/saved-plan-days";
+export {
+  mockOnTimeStats,
+  mockTopShops,
+} from "@/app/data/mocks/dashboard-stats";
 export { mockBlacklist } from "@/app/data/mocks/blacklist";
 export {
   policyVersion,

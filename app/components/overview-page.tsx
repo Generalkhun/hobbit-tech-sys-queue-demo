@@ -9,6 +9,7 @@ import {
 } from "@/app/data/overview";
 import { computePendingWorkByGrade } from "@/app/data/pending-work";
 import { BreakdownTable } from "@/app/components/overview/breakdown-table";
+import { DashboardCharts } from "@/app/components/overview/dashboard-charts";
 import { OverviewFilters } from "@/app/components/overview/overview-filters";
 import { OverviewStatCards } from "@/app/components/overview/overview-stat-cards";
 import { PlanFillPanel } from "@/app/components/overview/plan-fill-panel";
@@ -65,6 +66,7 @@ export function OverviewPage({
 
   return (
     <div className="space-y-6">
+      {isAdmin && <DashboardCharts />}
       <OverviewFilters
         date={date}
         plantFilter={plantFilter}
