@@ -258,7 +258,7 @@ export function OperationsTable({
                   </td>
                   <td className="px-3 py-4">
                     <span
-                      className={`rounded px-2 py-0.5 text-[10px] font-bold text-white ${status.className}`}
+                      className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-[10px] font-bold ${status.className}`}
                     >
                       {status.label}
                     </span>

@@ -200,8 +200,6 @@ export function PageContent(props: PageContentProps) {
           noAnswerCounts={queue.noAnswerCounts}
           grades={queue.plans.map((plan) => plan.grade)}
           onTransition={queue.transitionBooking}
-          onRecordCheckin={queue.recordCheckinForBooking}
-          onMarkNoAnswer={queue.markNoAnswer}
         />
       );
     case "operations-history":
@@ -212,6 +210,7 @@ export function PageContent(props: PageContentProps) {
           bookings={queue.bookings}
           onRecordCheckin={queue.recordCheckinForBooking}
           onStatusChange={queue.updateBookingStatus}
+          onMarkNoAnswer={queue.markNoAnswer}
         />
       );
     case "queue-check":

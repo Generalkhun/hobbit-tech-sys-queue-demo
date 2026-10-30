@@ -43,40 +43,41 @@ export function Panel({
   );
 }
 
+/** สถานะ + สี ตรงกับผังขั้นตอนการจัดการการจัดส่ง (DMF) */
 const statusContent: Record<
   BookingStatus,
   { label: string; className: string }
 > = {
   confirmed: {
-    label: "ยืนยันแล้ว",
-    className: "bg-sys-50 text-sys-700 ring-sys-100",
+    label: "1. ยังไม่ check-in",
+    className: "bg-sky-50 text-sky-700 ring-sky-100",
   },
   waiting: {
-    label: "รอเรียกคิว",
-    className: "bg-amber-50 text-amber-700 ring-amber-100",
+    label: "1. ยังไม่ check-in",
+    className: "bg-sky-50 text-sky-700 ring-sky-100",
   },
   "checked-in": {
-    label: "เช็คอินแล้ว",
-    className: "bg-sky-50 text-sky-700 ring-sky-100",
-  },
-  "at-gate": {
-    label: "จัดคิวแล้ว",
-    className: "bg-sky-50 text-sky-700 ring-sky-100",
-  },
-  "call-requested": {
-    label: "ปศ. แจ้ง รปภ. ให้เรียกรถ",
+    label: "3. รอจัดคิว",
     className: "bg-amber-50 text-amber-700 ring-amber-100",
   },
-  called: {
-    label: "รปภ. โทรเรียกแล้ว",
+  "at-gate": {
+    label: "4. รอเรียก",
+    className: "bg-amber-50 text-amber-700 ring-amber-100",
+  },
+  "call-requested": {
+    label: "5. Operation แจ้ง รปภ. แล้ว",
     className: "bg-violet-50 text-violet-700 ring-violet-100",
   },
+  called: {
+    label: "6.1 รปภ. โทรเรียกแล้ว",
+    className: "bg-rose-50 text-rose-700 ring-rose-100",
+  },
   "no-answer": {
-    label: "โทรแล้วไม่รับ",
+    label: "6.2 รปภ. โทรแล้วไม่รับ",
     className: "bg-rose-50 text-rose-700 ring-rose-100",
   },
   completed: {
-    label: "ผ่านป้อม · ออกใบนำผ่านแล้ว",
+    label: "7. ผ่าน รปภ. แล้ว",
     className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   },
 };

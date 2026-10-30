@@ -27,10 +27,8 @@ import type {
 import type { NoteWithAttachments } from "@/app/types/common";
 
 type OpsAction =
-  | { kind: "checkin"; row: OpsTableRow }
   | { kind: "queue"; row: OpsTableRow }
   | { kind: "call"; row: OpsTableRow }
-  | { kind: "no-answer"; row: OpsTableRow }
   | { kind: "recall"; row: OpsTableRow }
   | null;
 
@@ -43,8 +41,6 @@ export function CallingPage({
   noAnswerCounts,
   grades,
   onTransition,
-  onRecordCheckin,
-  onMarkNoAnswer,
 }: {
   bookings: QueueBooking[];
   plans: PlanRow[];
@@ -59,15 +55,6 @@ export function CallingPage({
     value?: NoteWithAttachments,
     actionLabel?: string,
   ) => string | null;
-  onRecordCheckin: (
-    id: string,
-    atTime: string,
-    value?: NoteWithAttachments,
-  ) => { error?: string; lateMinutes: number };
-  onMarkNoAnswer: (
-    id: string,
-    value?: NoteWithAttachments,
-  ) => { error?: string; count: number };
 }) {
   const [date, setDate] = useState(demoDate);
   const [notice, setNotice] = useState<{ text: string; error: boolean } | null>(null);
@@ -88,23 +75,6 @@ export function CallingPage({
   function runAction() {
     if (!action) return;
     switch (action.kind) {
-      case "checkin": {
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
-          now.getMinutes(),
-        ).padStart(2, "0")}`;
-        const result = onRecordCheckin(action.row.booking.id, timeStr, noteValue);
-        if (result.error) {
-          report(result.error, "");
-          setAction(null);
-          return;
-        }
-        const lateText =
-          result.lateMinutes >= 10 ? ` · เช็คอินสาย ${result.lateMinutes} นาที` : " · ตรงเวลา";
-        report(null, `บันทึกเช็คอิน ${action.row.booking.plate} แล้ว${lateText}`);
-        setAction(null);
-        return;
-      }
       case "queue": {
         const error = onTransition(
           action.row.booking.id,
@@ -127,17 +97,6 @@ export function CallingPage({
         setAction(null);
         return;
       }
-      case "no-answer": {
-        const result = onMarkNoAnswer(action.row.booking.id, noteValue);
-        if (result.error) {
-          report(result.error, "");
-          setAction(null);
-          return;
-        }
-        report(null, `บันทึก รปภ. โทรแล้วไม่รับ (ครั้งที่ ${result.count}) แล้ว`);
-        setAction(null);
-        return;
-      }
       case "recall": {
         const error = onTransition(
           action.row.booking.id,
@@ -156,11 +115,6 @@ export function CallingPage({
     NonNullable<OpsAction>["kind"],
     { title: string; subtitle: string; confirmLabel: string }
   > = {
-    checkin: {
-      title: "บันทึกเช็คอิน",
-      subtitle: "รถมาถึงแล้ว (online หรือ รปภ.) บันทึกเวลาเช็คอินจริง",
-      confirmLabel: "บันทึกเช็คอิน",
-    },
     queue: {
       title: "จัดคิวแล้ว",
       subtitle: "ยืนยันว่ารถเข้าสู่คิวรอเรียกแล้ว",
@@ -170,11 +124,6 @@ export function CallingPage({
       title: "แจ้ง รปภ. ให้โทรเรียกรถ",
       subtitle: "รถพร้อมให้เรียกเข้าโรงงาน — operation แจ้ง รปภ. แล้ว",
       confirmLabel: "แจ้ง รปภ.",
-    },
-    "no-answer": {
-      title: "รปภ. โทรแล้วไม่รับ",
-      subtitle: "บันทึกว่ารถไม่รับสาย — รถจะกลับไปรอคิว",
-      confirmLabel: "บันทึกโทรไม่รับ",
     },
     recall: {
       title: "กลับมารอคิว",
@@ -231,15 +180,9 @@ export function CallingPage({
           const status = booking.status;
           return (
             <div className="flex flex-col items-end gap-1.5">
+              {/* 1. ยังไม่ check-in — รถต้องเช็คอินเอง ไม่มีปุ่มให้ ปศ. กด */}
               {status === "confirmed" || status === "waiting" ? (
-                <Button
-                  variant="secondary"
-                  className="px-3 py-1.5 text-[11px]"
-                  onClick={() => openAction({ kind: "checkin", row })}
-                >
-                  <Icon name="scan" size={12} />
-                  เช็คอิน
-                </Button>
+                <span className="text-[11px] text-slate-400">รอรถเช็คอินเอง</span>
               ) : null}
               {status === "checked-in" ? (
                 <Button
@@ -261,18 +204,9 @@ export function CallingPage({
                   โทรแจ้ง
                 </Button>
               ) : null}
+              {/* 5. Operation แจ้ง รปภ แล้ว — รอ รปภ. โทร (ถ้าไม่รับ รปภ. กดในระบบเอง) */}
               {status === "call-requested" ? (
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-[11px] text-amber-700">รปภ. กำลังโทรเรียก</span>
-                  <Button
-                    variant="secondary"
-                    className="px-3 py-1.5 text-[11px]"
-                    onClick={() => openAction({ kind: "no-answer", row })}
-                  >
-                    <Icon name="close" size={12} />
-                    โทรไม่รับ
-                  </Button>
-                </div>
+                <span className="text-[11px] text-amber-700">รอ รปภ. โทรเรียก</span>
               ) : null}
               {status === "no-answer" ? (
                 <Button

@@ -10,6 +10,7 @@ export function SecurityPage({
   bookings,
   onRecordCheckin,
   onStatusChange,
+  onMarkNoAnswer,
 }: {
   bookings: QueueBooking[];
   onRecordCheckin: (
@@ -17,6 +18,8 @@ export function SecurityPage({
     atTime: string,
   ) => { error?: string; lateMinutes: number };
   onStatusChange: (id: string, status: BookingStatus) => string | null;
+  /** รปภ. กดบันทึกว่าโทรแล้วไม่รับ — รถจะวนกลับไปรอจัดคิว */
+  onMarkNoAnswer: (id: string) => { error?: string; count: number };
 }) {
   const [scanId, setScanId] = useState("");
   const [plantId, setPlantId] = useState(plants[0].id);
@@ -259,18 +262,34 @@ export function SecurityPage({
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       {booking.status === "call-requested" && (
-                        <Button
-                          className="px-3 py-2 text-[11px]"
-                          onClick={() => {
-                            const error = onStatusChange(booking.id, "called");
-                            setNoticeKind(error ? "error" : "success");
-                            setNotice(
-                              error ?? `โทรเรียกรถทะเบียน ${booking.plate} แล้ว`,
-                            );
-                          }}
-                        >
-                          โทรเรียกคนขับ
-                        </Button>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <Button
+                            className="px-3 py-2 text-[11px]"
+                            onClick={() => {
+                              const error = onStatusChange(booking.id, "called");
+                              setNoticeKind(error ? "error" : "success");
+                              setNotice(
+                                error ?? `โทรเรียกรถทะเบียน ${booking.plate} แล้ว`,
+                              );
+                            }}
+                          >
+                            โทรเรียกคนขับ
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            className="px-3 py-2 text-[11px]"
+                            onClick={() => {
+                              const result = onMarkNoAnswer(booking.id);
+                              setNoticeKind(result.error ? "error" : "success");
+                              setNotice(
+                                result.error ??
+                                  `บันทึกโทรไม่รับ · รถทะเบียน ${booking.plate} (ครั้งที่ ${result.count})`,
+                              );
+                            }}
+                          >
+                            โทรแล้วไม่รับ
+                          </Button>
+                        </div>
                       )}
                       {booking.status === "called" && (
                         <Button
