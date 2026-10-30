@@ -15,8 +15,8 @@ export function DriverPassView({ booking }: { booking: QueueBooking | undefined 
         <DeliverySlip
           key={booking.id}
           booking={booking}
-          onGenerateVerificationCode={() => null}
-          showVerificationSection={false}
+          onGenerateDriverLink={() => null}
+          showDriverLinkSection={false}
           showPrintButton={false}
           showStatusBadge={false}
         />

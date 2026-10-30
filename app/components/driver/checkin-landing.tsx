@@ -10,6 +10,7 @@ export function CheckinLanding({
   isCheckingLocation,
   onSelectBooking,
   onBegin,
+  linkMode = false,
 }: {
   activeBookings: QueueBooking[];
   selectedBooking: QueueBooking | undefined;
@@ -17,6 +18,8 @@ export function CheckinLanding({
   isCheckingLocation: boolean;
   onSelectBooking: (bookingId: string) => void;
   onBegin: () => void;
+  /** มาจากลิงก์เช็คอินเฉพาะต่องาน — ยืนยันตัวตนคนขับแล้ว ไม่ต้องกรอกรหัส */
+  linkMode?: boolean;
 }) {
   return (
     <Panel className="mx-auto flex min-h-[420px] max-w-2xl flex-col items-center justify-center p-8 text-center">
@@ -24,10 +27,13 @@ export function CheckinLanding({
         <Icon name="map" size={30} />
       </div>
       <h2 className="mt-5 text-xl font-bold text-sys-900">
-        เริ่มเช็คอินระยะไกล
+        {linkMode ? "เช็คอิน online สำหรับงานนี้" : "เริ่มเช็คอินระยะไกล"}
       </h2>
       <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-        ต้องอยู่ห่างจากโรงงานปลายทางไม่เกิน {checkinRadiusKm} กิโลเมตร
+        {linkMode
+          ? "ลิงก์นี้ผูกกับงานของคุณแล้ว ต้องอยู่ห่างจากโรงงานปลายทางไม่เกิน "
+          : "ต้องอยู่ห่างจากโรงงานปลายทางไม่เกิน "}
+        {checkinRadiusKm} กิโลเมตร
         และอนุญาตให้ browser เข้าถึงตำแหน่งก่อนเริ่มเช็คอิน online
       </p>
       {activeBookings.length > 1 && (

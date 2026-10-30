@@ -19,13 +19,18 @@ export function BookingPage(props: BookingPageProps) {
     blacklist,
     draft,
     viewBooking,
-    verificationCodes,
+    driverLinks,
     onGoToRegistry,
     onReturnToList,
-    onGenerateVerificationCode,
+    onGenerateDriverLink,
   } = props;
   const wizard = useBookingWizard(props);
   const { step, createdBooking, formError } = wizard;
+
+  function getLinkBaseUrl(): string {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}${window.location.pathname}`;
+  }
 
   return (
     <div className="space-y-6">
@@ -116,8 +121,10 @@ export function BookingPage(props: BookingPageProps) {
         {step === 3 && createdBooking && (
           <BookingSuccessStep
             booking={createdBooking}
-            verificationCode={verificationCodes[createdBooking.id]}
-            onGenerateVerificationCode={onGenerateVerificationCode}
+            driverLink={driverLinks[createdBooking.id]}
+            onGenerateDriverLink={(bookingId) =>
+              onGenerateDriverLink(bookingId, getLinkBaseUrl())
+            }
             onReturnToList={onReturnToList}
           />
         )}

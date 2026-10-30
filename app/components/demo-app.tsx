@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { AppShell } from "@/app/components/app-shell";
+import { DriverPortalPage } from "@/app/components/driver-portal-page";
 import { LoginScreen } from "@/app/components/login-screen";
 import { PageContent } from "@/app/components/page-content";
 import { canAccessPage } from "@/app/data/access";
@@ -60,6 +61,24 @@ export function DemoApp() {
   });
   const driverCheckin = useDriverCheckin();
 
+  // เปิดลิงก์เช็คอินคนขับ (รูปแบบ #driver-<bookingId>-<token>)
+  // ไม่ต้องเข้าสู่ระบบ — ลิงก์เฉพาะต่องานเป็นตัวยืนยันตัวตน (KYC) ของคนขับ
+  const [driverLink, setDriverLink] = useState<{
+    bookingId: string;
+    token: string;
+  } | null>(null);
+
+  useEffect(() => {
+    function parseDriverLink() {
+      const raw = window.location.hash;
+      const match = raw.match(/^#driver-(.+)-(\d{6})$/);
+      if (!match) return;
+      const [, bookingId, token] = match;
+      setDriverLink({ bookingId, token });
+    }
+    parseDriverLink();
+  }, []);
+
   function navigateTo(nextPage: PageKey) {
     if (user && canAccessPage(user.role, nextPage)) setPage(nextPage);
   }
@@ -70,6 +89,82 @@ export function DemoApp() {
     bookings: queue.bookings,
     openBookingPage: () => navigateTo("booking"),
   });
+
+  if (driverLink) {
+    const checkinBooking = queue.bookings.find(
+      (booking) => booking.id === driverLink.bookingId,
+    );
+    if (
+      !checkinBooking ||
+      !driverCheckin.isValidLink(driverLink.bookingId, driverLink.token)
+    ) {
+      return (
+        <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center p-6 text-center">
+          <h1 className="text-xl font-bold text-sys-900">
+            ลิงก์เช็คอินไม่ถูกต้อง
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            ลิงก์นี้ใช้ไม่ได้หรือหมดอายุแล้ว กรุณาติดต่อผู้ส่งเหล็กเพื่อขอลิงก์ใหม่
+          </p>
+          <a
+            href="/"
+            className="mt-6 rounded-xl bg-sys-700 px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            กลับหน้าแรก
+          </a>
+        </div>
+      );
+    }
+    const currentDriver = registry.drivers.find(
+      (driver) => driver.name === checkinBooking.driver,
+    );
+    // เปิดหน้าเช็คอินของงานนี้โดยตรง (เข้าสู่ระบบผ่านลิงก์แล้ว)
+    return (
+      <main className="min-h-screen bg-[#f4f8fa]">
+        <header className="border-b border-slate-100 bg-white px-4 py-4 sm:px-7">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-black italic tracking-[-2px] text-sys-700">
+              SYS
+            </span>
+            <span className="h-5 w-px bg-slate-200" />
+            <span className="text-xs font-medium text-slate-500">
+              ระบบจัดการคิวรับเศษเหล็ก · เช็คอินคนขับ
+            </span>
+          </div>
+        </header>
+        <div className="mx-auto max-w-[1480px] px-4 py-8 sm:px-7 xl:px-10">
+          <DriverPortalPage
+            page={page === "driver-pass" ? "driver-checkin" : page}
+            driver={
+              currentDriver ?? {
+                id: "link-driver",
+                name: checkinBooking.driver,
+                prefix: "",
+                firstName: "",
+                lastName: "",
+                employmentType: "contractor",
+                shopName: "",
+                carrier: checkinBooking.carrier,
+                plate: checkinBooking.plate,
+                phone: "",
+                email: "",
+                nationalId: "",
+                licenseNumber: "",
+                status: "active",
+              }
+            }
+            bookings={queue.bookings}
+            linkBookingId={checkinBooking.id}
+            progress={driverCheckin.progress}
+            contactPhones={driverCheckin.contactPhones}
+            onProgressChange={driverCheckin.setProgress}
+            onContactPhonesChange={driverCheckin.setContactPhones}
+            onNavigate={(nextPage) => setPage(nextPage)}
+          />
+        </div>
+      </main>
+    );
+  }
 
   if (!user) {
     return (

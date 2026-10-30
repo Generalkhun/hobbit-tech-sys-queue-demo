@@ -63,20 +63,20 @@ function DeliveryQr({ value }: { value: string }) {
 
 export function DeliverySlip({
   booking,
-  verificationCode,
-  onGenerateVerificationCode,
-  showVerificationSection = true,
+  driverLink,
+  onGenerateDriverLink,
+  showDriverLinkSection = true,
   showPrintButton = true,
   showStatusBadge = true,
 }: {
   booking: QueueBooking;
-  verificationCode?: string;
-  onGenerateVerificationCode: (bookingId: string) => string | null;
-  showVerificationSection?: boolean;
+  driverLink?: string;
+  onGenerateDriverLink: (bookingId: string) => string | null;
+  showDriverLinkSection?: boolean;
   showPrintButton?: boolean;
   showStatusBadge?: boolean;
 }) {
-  const [codeGenerationError, setCodeGenerationError] = useState("");
+  const [linkGenerationError, setLinkGenerationError] = useState("");
   const qrValue = [
     "SYS-QUEUE",
     booking.id,
@@ -165,37 +165,50 @@ export function DeliverySlip({
           </div>
         )}
       </div>
-      {showVerificationSection && (
+      {showDriverLinkSection && (
         <div className="border-t border-slate-100 px-5 py-5 sm:px-7">
           <h3 className="text-sm font-bold text-sys-900">
-            รหัสยืนยันตัวตนคนขับ
+            ลิงก์เช็คอินคนขับ
           </h3>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            สร้างรหัส 6 หลักเพื่อแจ้งให้คนขับใช้ยืนยันตัวตนตอนเช็คอิน online
+            สร้างลิงก์เฉพาะต่องานนี้เพื่อส่งให้คนขับ — การได้ลิงก์นี้เป็นการยืนยัน
+            ตัวตน (KYC) ว่ารู้จักงานนี้จริง เมื่อกดเข้าไปจะตรงไปที่หน้าเช็คอิน
+            ของงานนี้ และเช็คอิน online ได้ทันที
           </p>
-          {verificationCode ? (
-            <p className="mt-3 inline-flex rounded-xl bg-sys-50 px-4 py-3 font-mono text-2xl font-bold tracking-[0.3em] text-sys-800">
-              {verificationCode}
-            </p>
+          {driverLink ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-sys-50 p-3">
+              <p className="min-w-0 flex-1 truncate font-mono text-sm font-semibold text-sys-800">
+                {driverLink}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  navigator.clipboard?.writeText(driverLink).catch(() => {});
+                }}
+              >
+                คัดลอกลิงก์
+              </Button>
+            </div>
           ) : (
             <Button
               type="button"
               className="mt-3"
               onClick={() => {
-                const error = onGenerateVerificationCode(booking.id);
-                setCodeGenerationError(error ?? "");
+                const error = onGenerateDriverLink(booking.id);
+                setLinkGenerationError(error ?? "");
               }}
             >
-              สร้างรหัส 6 หลัก
+              สร้างลิงก์เช็คอินคนขับ
             </Button>
           )}
-          {codeGenerationError && (
+          {linkGenerationError && (
             <p role="alert" className="mt-3 text-sm text-rose-700">
-              {codeGenerationError}
+              {linkGenerationError}
             </p>
           )}
           <p className="mt-2 text-[11px] text-amber-700">
-            รหัสสำหรับ demo จัดเก็บในหน่วยความจำของแอปเท่านั้น
+            ลิงก์สำหรับ demo จัดเก็บในหน่วยความจำของแอปเท่านั้น
           </p>
         </div>
       )}

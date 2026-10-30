@@ -106,7 +106,6 @@ export function PageContent(props: PageContentProps) {
         contactPhones={driverCheckin.contactPhones}
         onProgressChange={driverCheckin.setProgress}
         onContactPhonesChange={driverCheckin.setContactPhones}
-        onVerifyCode={driverCheckin.verifyCode}
         onNavigate={onNavigate}
       />
     );
@@ -178,8 +177,8 @@ export function PageContent(props: PageContentProps) {
             onDraftChange={deliveryDrafts.updateDraft}
             onCompleteDraft={deliveryDrafts.completeDraft}
             onReturnToList={deliveryDrafts.returnToList}
-            verificationCodes={driverCheckin.codes}
-            onGenerateVerificationCode={driverCheckin.generateCode}
+            driverLinks={driverCheckin.links}
+            onGenerateDriverLink={driverCheckin.generateLink}
           />
         );
       }

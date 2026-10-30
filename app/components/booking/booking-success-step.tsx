@@ -5,15 +5,15 @@ import type { QueueBooking } from "@/app/types/queue";
 
 interface BookingSuccessStepProps {
   booking: QueueBooking;
-  verificationCode?: string;
-  onGenerateVerificationCode: (bookingId: string) => string | null;
+  driverLink?: string;
+  onGenerateDriverLink: (bookingId: string) => string | null;
   onReturnToList: () => void;
 }
 
 export function BookingSuccessStep({
   booking,
-  verificationCode,
-  onGenerateVerificationCode,
+  driverLink,
+  onGenerateDriverLink,
   onReturnToList,
 }: BookingSuccessStepProps) {
   return (
@@ -38,8 +38,8 @@ export function BookingSuccessStep({
       </div>
       <DeliverySlip
         booking={booking}
-        verificationCode={verificationCode}
-        onGenerateVerificationCode={onGenerateVerificationCode}
+        driverLink={driverLink}
+        onGenerateDriverLink={onGenerateDriverLink}
       />
     </div>
   );

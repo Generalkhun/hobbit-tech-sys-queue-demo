@@ -1,27 +1,20 @@
-const CODE_LENGTH = 6;
+const TOKEN_LENGTH = 6;
 
-export function generateVerificationCode():
-  | { code: string }
-  | { error: string } {
+/** สร้าง token สุ่มสำหรับ link เช็คอินคนขับ (unique ต่องาน) */
+export function generateDriverLinkToken(): string | null {
   if (typeof crypto === "undefined" || !crypto.getRandomValues) {
-    return { error: "ไม่สามารถสร้างรหัสยืนยันแบบสุ่มได้ในเบราว์เซอร์นี้" };
+    return null;
   }
   const randomValue = new Uint32Array(1);
   crypto.getRandomValues(randomValue);
-  const base = 10 ** (CODE_LENGTH - 1);
-  return { code: String(base + (randomValue[0] % (9 * base))) };
+  const base = 10 ** (TOKEN_LENGTH - 1);
+  return String(base + (randomValue[0] % (9 * base)));
 }
 
-/** คืนข้อความ error หรือ null เมื่อรหัสถูกต้อง */
-export function verifyDriverCode(
-  expectedCode: string | undefined,
-  submittedCode: string,
-): string | null {
-  if (!expectedCode) {
-    return "ยังไม่มีรหัสยืนยันสำหรับงานนี้ กรุณาติดต่อผู้ส่งเหล็ก";
-  }
-  if (submittedCode !== expectedCode) {
-    return "รหัสยืนยันไม่ถูกต้อง กรุณาตรวจสอบรหัสจากผู้ส่งเหล็ก";
-  }
-  return null;
+/** ตรวจว่า token ที่ส่งมาจาก link ตรงกับ token ที่สร้างให้งานนี้หรือไม่ */
+export function isValidDriverLinkToken(
+  expectedToken: string | undefined,
+  submittedToken: string,
+): boolean {
+  return expectedToken !== undefined && expectedToken === submittedToken;
 }

@@ -77,6 +77,6 @@ export interface BookingPageProps {
   onDraftChange: (draft: DeliveryDraft) => void;
   onCompleteDraft: (draftId: string) => void;
   onReturnToList: () => void;
-  verificationCodes: Record<string, string>;
-  onGenerateVerificationCode: (bookingId: string) => string | null;
+  driverLinks: Record<string, string>;
+  onGenerateDriverLink: (bookingId: string, baseUrl?: string) => string | null;
 }

@@ -4,12 +4,12 @@ export const plants: Plant[] = [
   {
     id: "SYS1",
     name: "SYS 1",
-    location: "อ.บางปะอิน · อยุธยา",
+    location: "กรุงเทพมหานคร",
     dailyCapacity: 340,
     reservedTons: 276,
     activeQueues: 12,
-    latitude: 14.1911,
-    longitude: 100.5771,
+    latitude: 13.7563,
+    longitude: 100.5018,
   },
   {
     id: "SYS2",

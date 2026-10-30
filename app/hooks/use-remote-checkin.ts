@@ -18,7 +18,7 @@ export function useRemoteCheckin(
   function beginRemoteCheckin(): void {
     setLocationError("");
     if (!selectedBooking) {
-      setLocationError("ไม่พบงานที่ยังเปิดให้เช็คอินสำหรับบัญชีคนขับนี้");
+      setLocationError("ไม่พบงานที่ยังเปิดให้เช็คอินสำหรับลิงก์นี้");
       return;
     }
     if (!navigator.geolocation) {
@@ -45,7 +45,9 @@ export function useRemoteCheckin(
           setLocationError(getDistanceError(distance));
           return;
         }
-        onProgressChange({ bookingId: selectedBooking.id, step: "review" });
+        // เมื่อตำแหน่งผ่าน ให้ถือว่าเช็คอิน online เรียบร้อย
+        // (การได้ลิงก์เฉพาะต่องานเป็นการยืนยันตัวตน KYC ระดับหนึ่งแล้ว)
+        onProgressChange({ bookingId: selectedBooking.id, step: "complete" });
       },
       (error) => {
         setIsCheckingLocation(false);

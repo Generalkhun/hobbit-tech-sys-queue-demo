@@ -36,12 +36,4 @@ export const demoUsers: DemoUser[] = [
     role: "security",
     initials: "สพ",
   },
-  {
-    id: "driver",
-    name: "สมชาย ใจดี",
-    organization: "ขนส่งอยุธยา · พนักงานขับรถ",
-    role: "driver",
-    initials: "สช",
-    driverId: "D-001",
-  },
 ];
