@@ -90,6 +90,11 @@ export function PlansLandingPage({
         month={cursor.month}
         today={today}
         isLocked={isLocked}
+        isPlanned={(date) =>
+          tab === "demand"
+            ? sumDayDemand(demand, date) > 0
+            : Boolean(slotPlan.savedDays[date])
+        }
         onMonthChange={(delta) => setCursor((c) => shiftMonth(c.year, c.month, delta))}
         onSelect={setSelectedDate}
         renderDay={(date) =>

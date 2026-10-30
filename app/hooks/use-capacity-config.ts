@@ -11,12 +11,14 @@ import {
   setSlotClosure,
   type GradeCapacities,
 } from "@/app/data/slot-capacity";
+import { mockSavedPlanDays } from "@/app/data/mock-data";
 import type { SavedPlanDay } from "@/app/types/plans";
 
 export function useCapacityConfig() {
   const [draftConfig, setDraftConfig] = useState(emptyCapacityConfig);
   const [savedConfig, setSavedConfig] = useState(emptyCapacityConfig);
-  const [savedDays, setSavedDays] = useState<Record<string, SavedPlanDay>>({});
+  const [savedDays, setSavedDays] =
+    useState<Record<string, SavedPlanDay>>(mockSavedPlanDays);
 
   function changeHourlyDefault(date: string, plantId: string, value: number) {
     setDraftConfig((current) => setHourlyDefault(current, date, plantId, value));

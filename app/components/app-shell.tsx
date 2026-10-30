@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { getAllowedPages } from "@/app/data/access";
 import { Icon } from "@/app/components/icons";
+import { LastUpdatedBadge } from "@/app/components/shared/last-updated-badge";
 import { navigationGroups, pageDetails } from "@/app/data/navigation";
 import { getUnreadAcknowledgements } from "@/app/data/policy-documents";
 import type { DemoUser, PageKey } from "@/app/types/queue";
@@ -147,10 +148,7 @@ export function AppShell({
         <div className="mx-auto max-w-[1480px] px-4 py-6 sm:px-7 xl:px-10">
           <div className="mb-6 hidden items-center justify-between sm:flex">
             <p className="text-sm text-slate-500">{activePage.subtitle}</p>
-            <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              ข้อมูลอัปเดตล่าสุด
-            </div>
+            <LastUpdatedBadge />
           </div>
           {children}
         </div>

@@ -8,6 +8,7 @@ export {
 } from "@/app/data/mocks/ops-seed";
 export { mockDrivers } from "@/app/data/mocks/drivers";
 export { mockPlans } from "@/app/data/mocks/plans";
+export { mockSavedPlanDays } from "@/app/data/mocks/saved-plan-days";
 export { mockBlacklist } from "@/app/data/mocks/blacklist";
 export {
   policyVersion,

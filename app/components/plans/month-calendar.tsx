@@ -5,12 +5,16 @@ import { Icon } from "@/app/components/icons";
 import { Panel } from "@/app/components/ui";
 import { getMonthCells, weekdayLabels } from "@/app/data/plan-calendar";
 
-/** ปฏิทินทั้งเดือน: วันที่ล็อกเป็นสีเทาจาง ๆ เนื้อหาในช่องกำหนดผ่าน renderDay */
+/**
+ * ปฏิทินทั้งเดือน: วันที่ล็อกเป็นสีเทาจาง ๆ เนื้อหาในช่องกำหนดผ่าน renderDay
+ * วันที่ "มีแผนแล้ว" (isPlanned) จะเป็นสีเขียวจาง ๆ เพื่อให้เห็นง่าย
+ */
 export function MonthCalendar({
   year,
   month,
   today,
   isLocked,
+  isPlanned,
   renderDay,
   onMonthChange,
   onSelect,
@@ -19,6 +23,8 @@ export function MonthCalendar({
   month: number;
   today: string;
   isLocked: (date: string) => boolean;
+  /** วันที่นี้มีแผนบันทึกไว้แล้วหรือไม่ (แสดงพื้นหลังสีเขียวจาง) */
+  isPlanned?: (date: string) => boolean;
   renderDay?: (date: string) => ReactNode;
   onMonthChange: (delta: number) => void;
   onSelect: (date: string) => void;
@@ -60,14 +66,19 @@ export function MonthCalendar({
       <div className="grid grid-cols-7">
         {getMonthCells(year, month).map((cell) => {
           const locked = isLocked(cell.date);
+          const planned = isPlanned?.(cell.date) ?? false;
           return (
             <button
               key={cell.date}
               type="button"
-              aria-label={`วันที่ ${cell.date}${locked ? " (ดูอย่างเดียว)" : ""}`}
+              aria-label={`วันที่ ${cell.date}${locked ? " (ดูอย่างเดียว)" : ""}${planned ? " (มีแผนแล้ว)" : ""}`}
               onClick={() => onSelect(cell.date)}
               className={`min-h-24 border-b border-r border-slate-100 p-2 text-left align-top text-xs transition-colors ${
-                locked ? "bg-slate-100/70 text-slate-400" : "bg-white hover:bg-sys-50"
+                planned
+                  ? "bg-emerald-50 hover:bg-emerald-100"
+                  : locked
+                    ? "bg-slate-100/70 text-slate-400"
+                    : "bg-white hover:bg-sys-50"
               } ${cell.inMonth ? "" : "opacity-40"}`}
             >
               <span
