@@ -24,6 +24,10 @@ import { ShopsPage } from "@/app/components/shops-page";
 import { Panel } from "@/app/components/ui";
 import { isDirectoryPage, vehicleTypes } from "@/app/data/directories";
 import { demoDate, mockBlacklist } from "@/app/data/mock-data";
+import {
+  findSellerByOrganization,
+  findShopByOrganization,
+} from "@/app/data/sellers";
 import { acknowledgeShopPolicies } from "@/app/data/policy-store";
 import { canManagePlans, getQueueShortcut } from "@/app/data/overview-queue";
 import type { useCapacityConfig } from "@/app/hooks/use-capacity-config";
@@ -278,7 +282,7 @@ export function PageContent(props: PageContentProps) {
     case "policy-documents":
       return <PolicyDocumentsPage userName={user.name} />;
     case "shop-profile": {
-      const shop = sellerDirectory.shops.find((s) => s.name === user.organization);
+      const shop = findShopByOrganization(sellerDirectory.shops, user.organization);
       if (!shop) {
         return (
           <Panel className="p-6 text-sm text-slate-500">
@@ -294,7 +298,7 @@ export function PageContent(props: PageContentProps) {
       );
     }
     case "seller-profile": {
-      const seller = sellerDirectory.sellers.find((s) => s.name === user.organization);
+      const seller = findSellerByOrganization(sellerDirectory.sellers, user.organization);
       if (!seller) {
         return (
           <Panel className="p-6 text-sm text-slate-500">
@@ -313,8 +317,8 @@ export function PageContent(props: PageContentProps) {
       if (user.role === "admin") {
         return <PolicyDocumentsPage userName={user.name} />;
       }
-      const shop = sellerDirectory.shops.find((s) => s.name === user.organization);
-      const seller = sellerDirectory.sellers.find((s) => s.name === user.organization);
+      const shop = findShopByOrganization(sellerDirectory.shops, user.organization);
+      const seller = findSellerByOrganization(sellerDirectory.sellers, user.organization);
       if (shop) {
         return (
           <AcknowledgementsPage

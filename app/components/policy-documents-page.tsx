@@ -24,6 +24,9 @@ export function PolicyDocumentsPage({ userName }: { userName: string }) {
   const [documentType, setDocumentType] = useState("privacy-notice");
   const [version, setVersion] = useState("1.0");
   const [targetAudience, setTargetAudience] = useState<"shop" | "seller" | "all">("all");
+  const [fileUrl, setFileUrl] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [fileError, setFileError] = useState("");
 
   const docs = getPolicyDocuments();
 
@@ -35,6 +38,8 @@ export function PolicyDocumentsPage({ userName }: { userName: string }) {
         documentType,
         version: version.trim(),
         targetAudience,
+        fileUrl: fileUrl || undefined,
+        fileName: fileName || undefined,
         active: true,
         createdBy: userName,
         updatedBy: userName,
@@ -45,6 +50,9 @@ export function PolicyDocumentsPage({ userName }: { userName: string }) {
     setDocumentType("privacy-notice");
     setVersion("1.0");
     setTargetAudience("all");
+    setFileUrl("");
+    setFileName("");
+    setFileError("");
     setView("list");
   }
 
@@ -111,8 +119,50 @@ export function PolicyDocumentsPage({ userName }: { userName: string }) {
                 </select>
               </label>
             </div>
+            <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              <span>ไฟล์เอกสาร (PDF)</span>
+              <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                <Icon name="file" size={14} />
+                {fileName || "เลือกไฟล์ PDF"}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="sr-only"
+                  aria-label="แนบไฟล์เอกสาร PDF"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    if (file.type !== "application/pdf") {
+                      setFileError("แนบได้เฉพาะไฟล์ PDF");
+                      return;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                      setFileError("ไฟล์ต้องมีขนาดไม่เกิน 10 MB");
+                      return;
+                    }
+                    setFileError("");
+                    setFileUrl(URL.createObjectURL(file));
+                    setFileName(file.name);
+                  }}
+                />
+              </label>
+              {fileError && <p className="text-xs text-rose-600">{fileError}</p>}
+              {fileName && (
+                <button
+                  type="button"
+                  className="w-fit text-xs font-semibold text-rose-600 hover:text-rose-700"
+                  onClick={() => {
+                    setFileUrl("");
+                    setFileName("");
+                  }}
+                >
+                  ลบไฟล์ที่แนบ
+                </button>
+              )}
+            </div>
             <div className="flex gap-3">
-              <Button onClick={handleCreate}>
+              <Button onClick={handleCreate} disabled={!title.trim()}>
                 <Icon name="plus" size={16} />
                 เพิ่มเอกสาร
               </Button>
@@ -144,6 +194,17 @@ export function PolicyDocumentsPage({ userName }: { userName: string }) {
             </div>
           </div>
           <p className="mt-3 text-sm text-slate-600">{selectedDoc.description}</p>
+          {selectedDoc.fileUrl && (
+            <a
+              href={selectedDoc.fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-sys-700 hover:bg-slate-50"
+            >
+              <Icon name="file" size={14} />
+              {selectedDoc.fileName ?? "เอกสารแนบ.pdf"}
+            </a>
+          )}
           <div className="mt-4 grid gap-3 sm:grid-cols-4 text-xs">
             <div className="rounded-xl bg-slate-50 px-3 py-2">
               <p className="text-slate-400">ทั้งหมด</p>

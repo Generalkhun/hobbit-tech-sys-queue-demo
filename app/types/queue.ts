@@ -176,6 +176,9 @@ export interface PolicyDocument {
   version: string;
   /** "shop" | "seller" | "all" */
   targetAudience: "shop" | "seller" | "all";
+  /** ไฟล์เอกสารแนบ (PDF) — URL และชื่อไฟล์ */
+  fileUrl?: string;
+  fileName?: string;
   createdAt: string;
   createdBy: string;
   updatedAt: string;

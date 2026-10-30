@@ -11,6 +11,26 @@ import type {
 
 export const NO_SELLER_LABEL = "ไม่มีผู้ขาย";
 
+/**
+ * ชื่อหน่วยงานของผู้ใช้ในระบบมีคำต่อท้าย เช่น "ร้านสมชายค้าเหล็ก · ร้านค้าของเก่า"
+ * หรือ "บริษัท เอส.เอส. เมทัล · นายหน้า" — ตัดคำต่อท้ายออกเพื่อเทียบชื่อจริง
+ */
+export function normalizeOrganization(organization: string) {
+  return organization.split(" · ")[0].trim();
+}
+
+/** หาร้านค้าย่อยจากชื่อหน่วยงานของผู้ใช้ (ทนต่อคำต่อท้าย) */
+export function findShopByOrganization(shops: SellerShop[], organization: string) {
+  const name = normalizeOrganization(organization);
+  return shops.find((shop) => shop.name === name) ?? null;
+}
+
+/** หาผู้ขายจากชื่อหน่วยงานของผู้ใช้ (ทนต่อคำต่อท้าย) */
+export function findSellerByOrganization(sellers: Seller[], organization: string) {
+  const name = normalizeOrganization(organization);
+  return sellers.find((seller) => seller.name === name) ?? null;
+}
+
 export function getShopsOfSeller(shops: SellerShop[], sellerId: string) {
   return shops.filter((shop) => shop.sellerId === sellerId);
 }

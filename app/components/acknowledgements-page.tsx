@@ -56,15 +56,46 @@ export function AcknowledgementsPage({
           <div className="mt-5 rounded-xl bg-slate-50 p-5">
             <h3 className="font-bold text-sys-900">เนื้อหาเอกสาร</h3>
             <p className="mt-3 text-sm text-slate-600">{selectedDoc.description}</p>
-            <div className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
-              <p>นี่คือเนื้อหาตัวอย่าง (mock) สำหรับเอกสารนี้</p>
-              <p className="mt-2">
-                ในระบบจริง เอกสารนี้จะแสดงรายละเอียดครบถ้วนเกี่ยวกับ{" "}
-                {selectedDoc.documentType === "privacy-notice"
-                  ? "การเก็บรวบรวม和使用ข้อมูลส่วนบุคคล"
-                  : "วัตถุประสงค์ ระยะเวลา และสิทธิของเจ้าของข้อมูล"}
-              </p>
-            </div>
+            {selectedDoc.fileUrl ? (
+              <div className="mt-4">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600">
+                    <Icon name="file" size={14} />
+                    {selectedDoc.fileName ?? "เอกสารแนบ.pdf"}
+                  </span>
+                  <a
+                    href={selectedDoc.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold text-sys-700 hover:text-sys-900"
+                  >
+                    เปิดในแท็บใหม่
+                  </a>
+                </div>
+                <object
+                  data={selectedDoc.fileUrl}
+                  type="application/pdf"
+                  className="h-[520px] w-full rounded-xl border border-slate-200 bg-white"
+                  aria-label={`ไฟล์เอกสาร ${selectedDoc.title}`}
+                >
+                  <p className="p-4 text-xs text-slate-500">
+                    เบราว์เซอร์ไม่รองรับการแสดง PDF —{" "}
+                    <a
+                      href={selectedDoc.fileUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold text-sys-700 underline"
+                    >
+                      กดเปิดไฟล์เอกสาร
+                    </a>
+                  </p>
+                </object>
+              </div>
+            ) : (
+              <div className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-400">
+                <p>เอกสารนี้ยังไม่มีไฟล์แนบ</p>
+              </div>
+            )}
           </div>
           <div className="mt-5 flex gap-3">
             <Button onClick={() => handleAcknowledge(selectedDoc)}>
