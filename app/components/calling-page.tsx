@@ -100,11 +100,11 @@ export function CallingPage({
       case "recall": {
         const error = onTransition(
           action.row.booking.id,
-          "checked-in",
+          "call-requested",
           noteValue,
-          "กลับมารอคิวใหม่ (โทรไม่รับ)",
+          "ปศ. สั่งให้ รปภ. โทรอีกครั้ง",
         );
-        report(error, `${action.row.booking.plate} กลับมารอคิวแล้ว`);
+        report(error, `สั่งให้ รปภ. โทรหา ${action.row.booking.plate} อีกครั้งแล้ว`);
         setAction(null);
         return;
       }
@@ -126,9 +126,9 @@ export function CallingPage({
       confirmLabel: "แจ้ง รปภ.",
     },
     recall: {
-      title: "กลับมารอคิว",
-      subtitle: "รถกลับเข้าคิวรอเรียกอีกครั้ง (จากโทรไม่รับ)",
-      confirmLabel: "กลับมารอคิว",
+      title: "ให้ รปภ. โทรอีกครั้ง",
+      subtitle: "รถไม่รับสาย — สั่งให้ รปภ. โทรเรียกอีกครั้ง",
+      confirmLabel: "ให้โทรอีก",
     },
   };
 
@@ -214,8 +214,8 @@ export function CallingPage({
                   className="px-3 py-1.5 text-[11px]"
                   onClick={() => openAction({ kind: "recall", row })}
                 >
-                  <Icon name="refresh" size={12} />
-                  กลับมารอคิว
+                  <Icon name="phone" size={12} />
+                  ให้โทรอีก
                 </Button>
               ) : null}
               {status === "called" ? (

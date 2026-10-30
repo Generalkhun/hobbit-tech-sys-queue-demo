@@ -208,6 +208,8 @@ export function PageContent(props: PageContentProps) {
       return (
         <SecurityPage
           bookings={queue.bookings}
+          drivers={registry.drivers}
+          vehicles={vehicleRegistry.vehicles}
           onRecordCheckin={queue.recordCheckinForBooking}
           onStatusChange={queue.updateBookingStatus}
           onMarkNoAnswer={queue.markNoAnswer}

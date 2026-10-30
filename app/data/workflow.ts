@@ -31,7 +31,8 @@ export function getNextOperationStatus(
     case "call-requested":
       return ["called", "no-answer"];
     case "no-answer":
-      return ["checked-in"];
+      // ปศ. กด "ให้โทรอีก" → กลับไปสถานะ 5 (รอ รปภ. โทรเรียกอีกครั้ง)
+      return ["call-requested"];
     case "called":
       return ["completed"];
     default:

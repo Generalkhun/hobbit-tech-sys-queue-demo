@@ -29,7 +29,7 @@ const queueSteps: {
     label: "รอ รปภ. โทรเรียก",
     doneWhen: (status) => status === "completed",
     activeWhen: (status) =>
-      status === "call-requested" || status === "called",
+      status === "call-requested" || status === "called" || status === "no-answer",
   },
 ];
 
