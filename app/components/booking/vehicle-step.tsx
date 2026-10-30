@@ -1,33 +1,111 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { getBlacklistReason } from "@/app/data/eligibility";
 import { Icon } from "@/app/components/icons";
-import { Button } from "@/app/components/ui";
+import { Button, inputClassName } from "@/app/components/ui";
 import { FormError } from "@/app/components/booking/form-error";
-import type { DeliveryVehicle } from "@/app/types/booking-form";
+import { RegistryStatusBadge } from "@/app/components/registry/registry-status-badge";
+import type { DeliveryVehicle, VehicleScope } from "@/app/types/booking-form";
 import type { BlacklistRecord } from "@/app/types/queue";
 
 interface VehicleStepProps {
+  /** รถที่ผู้ใช้เห็นตามสิทธิ์ (ผู้ขาย/ร้านค้า/จศ.) */
   vehicles: DeliveryVehicle[];
+  /** รถทั้งหมดในระบบ ใช้กับ จศ. ที่มี filter สังกัด */
+  allVehicles: DeliveryVehicle[];
   vehicleKey: string;
   selectedVehicle?: DeliveryVehicle;
+  selectedVehicleBlacklistReasons: string[];
+  vehicleScope: VehicleScope;
   blacklist: BlacklistRecord[];
   formError: string;
   onChooseVehicle: (vehicle: DeliveryVehicle) => void;
+  onViewVehicle: (vehicleId: string) => void;
   onBack: () => void;
   onNext: () => void;
   onSaveDraft: () => void;
 }
 
+const affiliationOptions = [
+  { value: "all", label: "ทุกสังกัด" },
+  { value: "shop", label: "รถของร้านค้า" },
+  { value: "contractor", label: "รถรับจ้างอิสระ" },
+] as const;
+
 export function VehicleStep({
   vehicles,
+  allVehicles,
   vehicleKey,
   selectedVehicle,
+  selectedVehicleBlacklistReasons,
+  vehicleScope,
   blacklist,
   formError,
   onChooseVehicle,
+  onViewVehicle,
   onBack,
   onNext,
   onSaveDraft,
 }: VehicleStepProps) {
+  const isAdmin = vehicleScope.kind === "admin";
+  const [query, setQuery] = useState("");
+  const [affiliation, setAffiliation] = useState<string>("all");
+  const [vehicleType, setVehicleType] = useState("");
+  const [province, setProvince] = useState("");
+  const [sortBy, setSortBy] = useState<"plate" | "carrier" | "province">("plate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const pool = isAdmin ? allVehicles : vehicles;
+  const vehicleTypes = useMemo(
+    () => Array.from(new Set(pool.map((v) => v.vehicleType).filter(Boolean))).sort(),
+    [pool],
+  );
+  const provinces = useMemo(
+    () => Array.from(new Set(pool.map((v) => v.province).filter(Boolean))).sort(),
+    [pool],
+  );
+
+  const rows = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return pool
+      .filter((vehicle) => {
+        if (keyword) {
+          const haystack = [
+            vehicle.plate,
+            vehicle.carrier,
+            vehicle.vehicleType,
+            vehicle.province,
+            vehicle.shopName,
+          ]
+            .join(" ")
+            .toLowerCase();
+          if (!haystack.includes(keyword)) return false;
+        }
+        if (affiliation !== "all" && vehicle.ownerType !== affiliation) return false;
+        if (vehicleType && vehicle.vehicleType !== vehicleType) return false;
+        if (province && vehicle.province !== province) return false;
+        return true;
+      })
+      .sort((left, right) => {
+        const a = left[sortBy] ?? "";
+        const b = right[sortBy] ?? "";
+        return sortDir === "asc" ? a.localeCompare(b, "th") : b.localeCompare(a, "th");
+      });
+  }, [pool, query, affiliation, vehicleType, province, sortBy, sortDir]);
+
+  function toggleSort(next: typeof sortBy) {
+    if (sortBy === next) {
+      setSortDir((current) => (current === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(next);
+      setSortDir("asc");
+    }
+  }
+
+  const sortArrow = (column: typeof sortBy) =>
+    sortBy === column ? (sortDir === "asc" ? " ↑" : " ↓") : "";
+
   return (
     <div>
       <div className="border-t border-slate-100 px-5 py-6 sm:px-7">
@@ -35,93 +113,227 @@ export function VehicleStep({
           <div>
             <h3 className="font-bold text-sys-900">เลือกรถยนต์</h3>
             <p className="mt-1 text-xs text-slate-400">
-              เลือกรถที่ลงทะเบียนและผ่านการอนุมัติแล้ว
+              {isAdmin
+                ? "รถทุกคันในระบบ · กดหัวตารางเพื่อเรียงลำดับ และกรองตามสังกัด ประเภท หรือจังหวัด"
+                : "รถที่อยู่ในสังกัดของคุณและรถรับจ้างอิสระ · กดหัวตารางเพื่อเรียงลำดับ"}
             </p>
           </div>
           <span className="text-xs text-slate-400">ขั้นตอน 2 จาก 3</span>
         </div>
 
-        {vehicles.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {vehicles.map((vehicle) => {
-              const selected = vehicle.key === vehicleKey;
-              const vehicleBlacklistReasons = getBlacklistReason(
-                "",
-                vehicle.plate,
-                blacklist,
-              );
-              const isBlacklisted = vehicleBlacklistReasons.length > 0;
-              return (
-                <button
-                  type="button"
-                  key={vehicle.key}
-                  aria-pressed={selected}
-                  disabled={isBlacklisted}
-                  onClick={() => onChooseVehicle(vehicle)}
-                  className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition ${
-                    isBlacklisted
-                      ? "cursor-not-allowed border-rose-200 bg-rose-50/60 opacity-80"
-                      : selected
-                      ? "border-sys-500 bg-sys-50 ring-2 ring-sys-100"
-                      : "border-slate-200 hover:border-sys-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <span
-                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${
-                      selected
-                        ? "bg-sys-600 text-white"
-                        : "bg-sys-50 text-sys-700"
-                    }`}
-                  >
-                    <Icon name="truck" size={21} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold text-sys-900">
-                      {vehicle.plate}
-                    </span>
-                    <span className="mt-1 block truncate text-xs text-slate-500">
-                      {vehicle.carrier}
-                    </span>
-                    <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
-                      <Icon name="shield" size={13} />
-                      อนุมัติแล้ว
-                    </span>
-                    {isBlacklisted && (
-                      <span className="mt-2 block text-[11px] font-semibold text-rose-700">
-                        Blacklist: {vehicleBlacklistReasons.join(" · ")}
-                      </span>
-                    )}
-                  </span>
-                  <span
-                    className={`mt-1 h-4 w-4 rounded-full border ${
-                      selected
-                        ? "border-[5px] border-sys-600 bg-white"
-                        : "border-slate-300"
-                    }`}
-                  />
-                </button>
-              );
-            })}
+        {/* ตัวกรอง */}
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+              ค้นหา
+            </label>
+            <input
+              className={inputClassName}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="ทะเบียน, บริษัทขนส่ง, ร้านค้า…"
+            />
+          </div>
+          {isAdmin && (
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                สังกัด
+              </label>
+              <select
+                className={inputClassName}
+                value={affiliation}
+                onChange={(event) => setAffiliation(event.target.value)}
+              >
+                {affiliationOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+              ประเภทรถ
+            </label>
+            <select
+              className={inputClassName}
+              value={vehicleType}
+              onChange={(event) => setVehicleType(event.target.value)}
+            >
+              <option value="">ทุกประเภท</option>
+              {vehicleTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+              จังหวัด
+            </label>
+            <select
+              className={inputClassName}
+              value={province}
+              onChange={(event) => setProvince(event.target.value)}
+            >
+              <option value="">ทุกจังหวัด</option>
+              {provinces.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {rows.length > 0 ? (
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full min-w-[860px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs text-slate-500">
+                <tr>
+                  <th className="w-10 px-4 py-3" aria-label="เลือก" />
+                  <th className="px-3 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("plate")}
+                      className="font-semibold hover:text-sys-700"
+                    >
+                      ทะเบียน / สังกัด{sortArrow("plate")}
+                    </button>
+                  </th>
+                  <th className="px-3 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("carrier")}
+                      className="font-semibold hover:text-sys-700"
+                    >
+                      บริษัทขนส่ง{sortArrow("carrier")}
+                    </button>
+                  </th>
+                  <th className="px-3 py-3 font-semibold">ประเภทรถ</th>
+                  <th className="px-3 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort("province")}
+                      className="font-semibold hover:text-sys-700"
+                    >
+                      จังหวัด{sortArrow("province")}
+                    </button>
+                  </th>
+                  <th className="px-3 py-3 font-semibold">สถานะ</th>
+                  <th className="px-3 py-3 text-right font-semibold">รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.map((vehicle) => {
+                  const selected = vehicle.key === vehicleKey;
+                  const blacklistReasons = getBlacklistReason(
+                    "",
+                    vehicle.plate,
+                    blacklist,
+                  );
+                  const isBlacklisted = blacklistReasons.length > 0;
+                  const isSelectable =
+                    vehicle.status === "active" &&
+                    !isBlacklisted &&
+                    vehicle.drivers.length > 0;
+                  return (
+                    <tr
+                      key={vehicle.key}
+                      className={
+                        selected
+                          ? "bg-sys-50/70"
+                          : isSelectable
+                            ? "hover:bg-slate-50/60"
+                            : "opacity-60"
+                      }
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="radio"
+                          name="vehicle-radio"
+                          aria-label={`เลือก ${vehicle.plate}`}
+                          checked={selected}
+                          disabled={!isSelectable}
+                          onChange={() => onChooseVehicle(vehicle)}
+                          className="h-4 w-4 accent-sys-600"
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        <p className="font-semibold text-slate-800">
+                          {vehicle.plate}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-slate-400">
+                          {vehicle.shopName
+                            ? `สังกัด ${vehicle.shopName}`
+                            : vehicle.ownerType === "shop"
+                              ? "รถของร้านค้า"
+                              : "รถรับจ้างอิสระ"}
+                        </p>
+                      </td>
+                      <td className="px-3 py-3 text-slate-600">
+                        {vehicle.carrier || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600">
+                        {vehicle.vehicleType || "-"}
+                      </td>
+                      <td className="px-3 py-3 text-slate-600">
+                        {vehicle.province || "-"}
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <RegistryStatusBadge status={vehicle.status} />
+                          {isBlacklisted && (
+                            <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-700">
+                              Blacklist
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onViewVehicle(vehicle.id)}
+                          className="rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-sys-700 hover:bg-sys-50"
+                        >
+                          ดูรายละเอียด
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 px-5 py-10 text-center">
             <p className="text-sm font-semibold text-slate-600">
-              ยังไม่มีรถที่ได้รับอนุมัติ
+              ไม่พบรถยนต์ที่ตรงกับเงื่อนไข
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              ลงทะเบียนรถและรอผู้ดูแลระบบอนุมัติก่อนสร้างใบนำส่ง
+              ปรับตัวกรองหรือค้นหาด้วยคำอื่น หรือลงทะเบียนรถและรอผู้ดูแลระบบอนุมัติ
             </p>
           </div>
         )}
+
         {selectedVehicle && (
-          <div className="mt-5 flex items-center gap-3 rounded-xl bg-sys-50/70 px-4 py-3">
-            <Icon name="circle-check" size={18} className="text-sys-600" />
-            <p className="text-xs text-sys-800">
-              เลือกรถ{" "}
-              <span className="font-bold">{selectedVehicle.plate}</span>
-              {" · "}
-              {selectedVehicle.carrier}
-            </p>
+          <div className="mt-5 flex items-start gap-3 rounded-xl bg-sys-50/70 px-4 py-3">
+            <Icon name="circle-check" size={18} className="mt-0.5 text-sys-600" />
+            <div>
+              <p className="text-xs text-sys-800">
+                เลือกรถ{" "}
+                <span className="font-bold">{selectedVehicle.plate}</span>
+                {" · "}
+                {selectedVehicle.carrier}
+              </p>
+              {selectedVehicleBlacklistReasons.length > 0 && (
+                <p className="mt-1 text-[11px] font-semibold text-rose-700">
+                  Blacklist: {selectedVehicleBlacklistReasons.join(" · ")}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

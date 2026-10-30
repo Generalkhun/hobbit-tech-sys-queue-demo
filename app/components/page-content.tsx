@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AcknowledgementsPage } from "@/app/components/acknowledgements-page";
 import { BookingPage } from "@/app/components/booking-page";
 import { CallingPage } from "@/app/components/calling-page";
@@ -75,6 +76,17 @@ export function PageContent(props: PageContentProps) {
   const isAdmin = user.role === "admin";
   const shopNames = sellerDirectory.shops.map((shop) => shop.name);
   const vehicleTypeNames = directoryRecords["vehicle-types"].map((type) => type.name);
+  const [vehicleFocusId, setVehicleFocusId] = useState<string | null>(null);
+
+  // เมื่อออกจากหน้า "vehicles" ให้ล้างสถานะการโฟกัสรถ (กันการค้างหน้าดูรายละเอียด)
+  useEffect(() => {
+    if (page !== "vehicles") setVehicleFocusId(null);
+  }, [page]);
+
+  function openVehicleDetail(vehicleId: string) {
+    setVehicleFocusId(vehicleId);
+    onNavigate("vehicles");
+  }
 
   if (page === "driver-pass" || page === "driver-checkin" || page === "driver-queue") {
     const currentDriver = registry.drivers.find((d) => d.id === user.driverId);
@@ -146,6 +158,9 @@ export function PageContent(props: PageContentProps) {
             key={deliveryDrafts.formDraft.id}
             user={user}
             drivers={registry.drivers}
+            vehicles={vehicleRegistry.vehicles}
+            sellers={sellerDirectory.sellers}
+            shops={sellerDirectory.shops}
             blacklist={mockBlacklist}
             plans={queue.plans}
             bookings={queue.bookings}
@@ -154,6 +169,7 @@ export function PageContent(props: PageContentProps) {
             acknowledgements={acknowledgements}
             onCreate={queue.createBooking}
             onGoToRegistry={() => onNavigate("drivers")}
+            onViewVehicle={openVehicleDetail}
             onAcknowledgePolicies={(shopName) =>
               acknowledgeShopPolicies(shopName, user.id)
             }
@@ -209,6 +225,8 @@ export function PageContent(props: PageContentProps) {
           shopNames={shopNames}
           vehicleTypes={vehicleTypeNames}
           isAdmin={isAdmin}
+          focusVehicleId={vehicleFocusId}
+          onClearFocus={() => setVehicleFocusId(null)}
           onSave={vehicleRegistry.saveVehicle}
           onStatusChange={vehicleRegistry.changeVehicleStatus}
         />

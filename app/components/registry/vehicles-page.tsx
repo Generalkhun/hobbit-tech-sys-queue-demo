@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RegistryList } from "@/app/components/registry/registry-list";
 import { VehicleDetail } from "@/app/components/registry/vehicle-detail";
 import { VehicleWizard } from "@/app/components/registry/vehicle-wizard";
@@ -25,6 +25,8 @@ export function VehiclesPage({
   shopNames,
   vehicleTypes,
   isAdmin,
+  focusVehicleId,
+  onClearFocus,
   onSave,
   onStatusChange,
 }: {
@@ -33,12 +35,24 @@ export function VehiclesPage({
   shopNames: string[];
   vehicleTypes: string[];
   isAdmin: boolean;
+  focusVehicleId?: string | null;
+  onClearFocus?: () => void;
   onSave: (vehicle: VehicleRecord) => void;
   onStatusChange: (id: string, action: RegistryStatusAction, value: NoteWithAttachments) => void;
 }) {
   const [view, setView] = useState<View>({ kind: "list" });
   const [newVehicle, setNewVehicle] = useState<VehicleRecord | null>(null);
-  const back = () => setView({ kind: "list" });
+  const back = () => {
+    onClearFocus?.();
+    setView({ kind: "list" });
+  };
+
+  // มาจากหน้าสร้างใบนำส่ง (กด "ดูรายละเอียด") → เปิดหน้ารายละเอียดรถคันนั้นทันที
+  useEffect(() => {
+    if (focusVehicleId && vehicles.some((vehicle) => vehicle.id === focusVehicleId)) {
+      setView({ kind: "detail", vehicleId: focusVehicleId });
+    }
+  }, [focusVehicleId, vehicles]);
 
   if (view.kind === "wizard") {
     const initial =

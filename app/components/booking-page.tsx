@@ -76,11 +76,17 @@ export function BookingPage(props: BookingPageProps) {
         {step === 1 && (
           <VehicleStep
             vehicles={wizard.vehicles}
+            allVehicles={wizard.allVehicles}
             vehicleKey={wizard.vehicleKey}
             selectedVehicle={wizard.selectedVehicle}
+            selectedVehicleBlacklistReasons={
+              wizard.selectedVehicleBlacklistReasons
+            }
+            vehicleScope={wizard.vehicleScope}
             blacklist={blacklist}
             formError={formError}
             onChooseVehicle={wizard.chooseVehicle}
+            onViewVehicle={props.onViewVehicle}
             onBack={() => wizard.setStep(0)}
             onNext={wizard.continueToDriver}
             onSaveDraft={wizard.saveDraft}

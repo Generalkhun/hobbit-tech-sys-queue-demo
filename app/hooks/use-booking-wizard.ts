@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { demoDate, policyVersion } from "@/app/data/mock-data";
 import {
   getBlacklistReason,
@@ -8,7 +8,9 @@ import { schedulePlant } from "@/app/data/scheduling";
 import { bookableSlots } from "@/app/data/slot-time";
 import {
   getVehicleKey,
-  groupVehicles,
+  scopeVehicles,
+  groupRegistryVehicles,
+  findSellerByName,
   ownShop,
 } from "@/app/data/booking-form";
 import { isDriverApproved } from "@/app/data/registry";
@@ -19,12 +21,16 @@ import type {
   DeliveryVehicle,
   EditableStep,
   EmploymentType,
+  VehicleScope,
 } from "@/app/types/booking-form";
 import type { DeliveryDraft, QueueBooking } from "@/app/types/queue";
 
 export function useBookingWizard({
   user,
   drivers,
+  vehicles,
+  sellers,
+  shops,
   blacklist,
   plans,
   bookings,
@@ -55,15 +61,38 @@ export function useBookingWizard({
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [dataUseAccepted, setDataUseAccepted] = useState(false);
   const approvedDrivers = drivers.filter(isDriverApproved);
-  const vehicles = groupVehicles(approvedDrivers);
+  const { retailer, broker, grade, date, timeSlot } = form;
+  const sellerScopeName =
+    user.role === "broker"
+      ? broker !== "—" && broker !== ""
+        ? broker
+        : user.organization.replace(" · นายหน้า", "")
+      : "";
+  const vehicleScope: VehicleScope =
+    user.role === "admin"
+      ? { kind: "admin" }
+      : user.role === "broker"
+        ? { kind: "broker", sellerId: findSellerByName(sellers, sellerScopeName)?.id ?? null }
+        : { kind: "retailer", shopName: retailer || ownShop };
+  const scopedVehicles = scopeVehicles(vehicles, sellers, shops, vehicleScope);
+  const allVehicles = groupRegistryVehicles(vehicles, approvedDrivers);
+  const vehiclesByScope = groupRegistryVehicles(scopedVehicles, approvedDrivers);
   const [vehicleKey, setVehicleKey] = useState(() =>
     draft.carrier && draft.plate
       ? `${draft.carrier}::${draft.plate}`
-      : approvedDrivers[0]
-        ? getVehicleKey(approvedDrivers[0])
+      : vehiclesByScope[0]
+        ? vehiclesByScope[0].key
         : "",
   );
-  const selectedVehicle = vehicles.find((vehicle) => vehicle.key === vehicleKey);
+  // เมื่อสังกัดเปลี่ยน (เช่น ผู้ขายเปลี่ยนร้านค้า) ให้เลือกรถคันแรกของสังกัดใหม่
+  useEffect(() => {
+    if (vehicleKey !== "" && !vehiclesByScope.some((v) => v.key === vehicleKey)) {
+      setVehicleKey(vehiclesByScope[0]?.key ?? "");
+    }
+  }, [vehiclesByScope, vehicleKey]);
+  const selectedVehicle =
+    vehiclesByScope.find((vehicle) => vehicle.key === vehicleKey) ??
+    vehiclesByScope[0];
   const [employmentType, setEmploymentType] =
     useState<EmploymentType>(draft.employmentType || "contractor");
   const [driverId, setDriverId] = useState(draft.driverId);
@@ -72,7 +101,6 @@ export function useBookingWizard({
   );
   const [formError, setFormError] = useState("");
 
-  const { retailer, broker, grade, date, timeSlot } = form;
   const heavyWeight = Number(form.heavyWeightKg);
   const lightWeight = Number(form.lightWeightKg);
   const hasValidWeights =
@@ -97,6 +125,10 @@ export function useBookingWizard({
       isRushHourReopened,
     ).available,
   );
+  const selectedVehicleBlacklistReasons = selectedVehicle
+    ? getBlacklistReason("", selectedVehicle.plate, blacklist)
+    : [];
+
   const shopHasAcknowledged = hasCurrentPolicyAcknowledgement(
     retailer,
     policyVersion,
@@ -266,9 +298,12 @@ export function useBookingWizard({
     setPrivacyAccepted,
     dataUseAccepted,
     setDataUseAccepted,
-    vehicles,
+    vehicles: vehiclesByScope,
+    allVehicles,
     vehicleKey,
     selectedVehicle,
+    vehicleScope,
+    selectedVehicleBlacklistReasons,
     employmentType,
     availableDrivers,
     selectedDriver,
