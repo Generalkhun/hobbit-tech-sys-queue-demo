@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { getBlacklistReason, hasCurrentPolicyAcknowledgement } from "@/app/data/eligibility";
-import { mockBlacklist, mockBookings, mockPlans, policyVersion } from "@/app/data/mock-data";
+import {
+  mockBlacklist,
+  mockBookings,
+  mockCheckinTimes,
+  mockNoAnswerCounts,
+  mockPlans,
+  policyVersion,
+} from "@/app/data/mock-data";
 import { canMoveBookingToPlant, schedulePlant } from "@/app/data/scheduling";
 import {
   createCapacityResolver,
@@ -52,8 +59,9 @@ export function useQueueBookings({
   const [bookings, setBookings] = useState<QueueBooking[]>(mockBookings);
   const [plans, setPlans] = useState(mockPlans);
   const [receipts, setReceipts] = useState<Record<string, BookingReceipt>>({});
-  const [checkinTimes, setCheckinTimes] = useState<CheckinTimes>({});
-  const [noAnswerCounts, setNoAnswerCounts] = useState<NoAnswerCounts>({});
+  const [checkinTimes, setCheckinTimes] = useState<CheckinTimes>(mockCheckinTimes);
+  const [noAnswerCounts, setNoAnswerCounts] =
+    useState<NoAnswerCounts>(mockNoAnswerCounts);
   const resolveCapacity = useMemo(
     () => createCapacityResolver(plans, savedConfig),
     [plans, savedConfig],

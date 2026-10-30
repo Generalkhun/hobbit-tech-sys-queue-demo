@@ -92,9 +92,10 @@ export function OperationsTable({
         };
       })
       .sort((a, b) => {
-        // รถที่รอนาน (รอจัดคิว/โทรไม่ติด) ขึ้นก่อน — priority ลำดับแรก
+        // รถที่รอนานที่สุดขึ้นก่อน — priority ลำดับแรก (รอจัดคิว/โทรไม่ติด)
         const waitingPriority = Number(b.waitMinutes > 0) - Number(a.waitMinutes > 0);
         if (waitingPriority !== 0) return waitingPriority;
+        if (b.waitMinutes !== a.waitMinutes) return b.waitMinutes - a.waitMinutes;
         // ถ้ารอเท่ากัน เรียงตามเวลานัดหมาย
         return compareTime(slotStart(a.booking.timeSlot), slotStart(b.booking.timeSlot));
       });
@@ -263,15 +264,20 @@ export function OperationsTable({
                     </span>
                   </td>
                   <td className="px-3 py-4">
-                    {lateMinutes >= 10 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-100">
-                        <Icon name="clock" size={10} />
-                        สาย {lateMinutes} นาที
-                      </span>
-                    ) : noAnswerCount > 0 ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700 ring-1 ring-inset ring-rose-100">
-                        <Icon name="phone" size={10} />
-                        โทรแล้วไม่รับ +{noAnswerCount}
+                    {lateMinutes >= 10 || noAnswerCount > 0 ? (
+                      <span className="flex flex-wrap gap-1">
+                        {lateMinutes >= 10 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 ring-1 ring-inset ring-amber-100">
+                            <Icon name="clock" size={10} />
+                            สาย {lateMinutes} นาที
+                          </span>
+                        )}
+                        {noAnswerCount > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700 ring-1 ring-inset ring-rose-100">
+                            <Icon name="phone" size={10} />
+                            โทรแล้วไม่รับ +{noAnswerCount}
+                          </span>
+                        )}
                       </span>
                     ) : (
                       <span className="text-[11px] text-slate-300">-</span>

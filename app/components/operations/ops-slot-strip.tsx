@@ -1,20 +1,76 @@
 "use client";
 
-import {
-  getGradeColor,
-} from "@/app/data/grade-colors";
+import { Icon } from "@/app/components/icons";
+import { Panel } from "@/app/components/ui";
 import {
   getSlotCapacities,
   type SlotCapacityConfig,
 } from "@/app/data/slot-capacity";
 import { formatHour, formatSlot, slotHours } from "@/app/data/slot-time";
-import { Panel } from "@/app/components/ui";
-import type { PlanRow, QueueBooking } from "@/app/types/queue";
+import type { BookingStatus, PlanRow, QueueBooking } from "@/app/types/queue";
+
+/** ขั้นตอนใน pipeline ที่ใช้แสดงในแถบกิจกรรม (ไม่แยกตามเกรด) */
+const pipelineStages: {
+  key: string;
+  label: string;
+  statuses: BookingStatus[];
+  bar: string;
+  soft: string;
+  text: string;
+}[] = [
+  {
+    key: "pre-checkin",
+    label: "ยังไม่ check-in",
+    statuses: ["confirmed", "waiting"],
+    bar: "bg-slate-400",
+    soft: "bg-slate-100",
+    text: "text-slate-700",
+  },
+  {
+    key: "queueing",
+    label: "รอจัดคิว",
+    statuses: ["checked-in"],
+    bar: "bg-sky-500",
+    soft: "bg-sky-50",
+    text: "text-sky-800",
+  },
+  {
+    key: "waiting-call",
+    label: "รอเรียก",
+    statuses: ["at-gate"],
+    bar: "bg-amber-400",
+    soft: "bg-amber-50",
+    text: "text-amber-800",
+  },
+  {
+    key: "calling",
+    label: "แจ้ง รปภ. แล้ว",
+    statuses: ["call-requested"],
+    bar: "bg-violet-500",
+    soft: "bg-violet-50",
+    text: "text-violet-800",
+  },
+  {
+    key: "called",
+    label: "โทรเรียกแล้ว",
+    statuses: ["called"],
+    bar: "bg-indigo-500",
+    soft: "bg-indigo-50",
+    text: "text-indigo-800",
+  },
+  {
+    key: "no-answer",
+    label: "โทรไม่รับ",
+    statuses: ["no-answer"],
+    bar: "bg-rose-500",
+    soft: "bg-rose-50",
+    text: "text-rose-800",
+  },
+];
 
 /**
- * แถบแสดง activity ต่อ timeslot (reuse แนวคิดจากแผนรับเหล็ก):
- * - โชว์จำนวนรถใน pipeline ของแต่ละ slot เทียบกับ cap ที่กำหนดไว้
- * - ถ้าเกิน cap ขึ้นสีแดง (แต่ไม่ block การทำงาน)
+ * แถบกิจกรรมตามช่วงเวลา (pipeline) — แสดงจำนวนรถในแต่ละขั้นตอนต่อ slot
+ * เพื่อให้ ปศ. เห็นว่าต้องเรียกคันไหนมาต่อ และเทียบกับ cap ที่ตั้งไว้ในแผน
  */
 export function OpsSlotStrip({
   date,
@@ -31,11 +87,17 @@ export function OpsSlotStrip({
   bookings: QueueBooking[];
   capacityConfig: SlotCapacityConfig;
 }) {
-  const grades = Array.from(new Set(plans.map((plan) => plan.grade)));
   const maxTotal = Math.max(
     1,
     ...slotHours.map((hour) => {
-      const capacities = getSlotCapacities(capacityConfig, plans, bookDate, "SYS1", formatSlot(hour), { ignoreClosure: true });
+      const capacities = getSlotCapacities(
+        capacityConfig,
+        plans,
+        bookDate,
+        "SYS1",
+        formatSlot(hour),
+        { ignoreClosure: true },
+      );
       return Object.values(capacities).reduce((sum, value) => sum + value, 0);
     }),
   );
@@ -46,14 +108,14 @@ export function OpsSlotStrip({
         <div>
           <h2 className="text-lg font-bold text-sys-900">กิจกรรมตามช่วงเวลา (pipeline)</h2>
           <p className="text-xs text-slate-400">
-            จำนวนรถที่อยู่ในคิวของแต่ละ slot เทียบกับจำนวนที่รับได้ในแผนรับเหล็ก · สีแดง = เกิน cap
+            จำนวนรถในแต่ละขั้นตอนของแต่ละ slot เทียบกับจำนวนที่รับได้ในแผนรับเหล็ก · สีแดง = เกิน cap
           </p>
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {grades.map((grade) => (
-            <span key={grade} className="flex items-center gap-2 text-xs text-slate-500">
-              <span className={`h-3 w-3 rounded ${getGradeColor(grades, grade).bar}`} />
-              {grade}
+          {pipelineStages.map((stage) => (
+            <span key={stage.key} className="flex items-center gap-2 text-xs text-slate-500">
+              <span className={`h-3 w-3 rounded ${stage.bar}`} />
+              {stage.label}
             </span>
           ))}
         </div>
@@ -61,55 +123,102 @@ export function OpsSlotStrip({
       <div className="divide-y divide-slate-100 border-y border-slate-100">
         {slotHours.map((hour) => {
           const slot = formatSlot(hour);
-          const capacities = getSlotCapacities(capacityConfig, plans, bookDate, "SYS1", slot, { ignoreClosure: true });
+          const capacities = getSlotCapacities(
+            capacityConfig,
+            plans,
+            bookDate,
+            "SYS1",
+            slot,
+            { ignoreClosure: true },
+          );
           const totalCap = Object.values(capacities).reduce((sum, value) => sum + value, 0);
-          const inSlot = bookings.filter((booking) => booking.date === date && booking.timeSlot === slot);
+          const inSlot = bookings.filter(
+            (booking) => booking.date === date && booking.timeSlot === slot,
+          );
           const inPipeline = inSlot.filter((booking) => booking.status !== "completed");
-          const byGrade = new Map<string, number>();
-          inPipeline.forEach((booking) => {
-            byGrade.set(booking.grade, (byGrade.get(booking.grade) ?? 0) + 1);
-          });
           const overCap = inPipeline.length > totalCap;
-          const widthPercent = maxTotal > 0 ? (inPipeline.length / maxTotal) * 100 : 0;
+          const fillPercent =
+            totalCap > 0 ? Math.min(100, (inPipeline.length / totalCap) * 100) : 0;
+          const stageCounts = pipelineStages
+            .map((stage) => ({
+              stage,
+              count: inPipeline.filter((booking) => stage.statuses.includes(booking.status))
+                .length,
+            }))
+            .filter((item) => item.count > 0);
+          const nextToCall = inPipeline.filter(
+            (booking) => booking.status === "at-gate",
+          ).length;
+          const isEmpty = inPipeline.length === 0;
           return (
-            <div key={hour} className="grid grid-cols-[3.5rem_1fr] gap-3 py-2 sm:grid-cols-[4.5rem_1fr]">
+            <div
+              key={hour}
+              className="grid grid-cols-[3.5rem_1fr] gap-3 py-2 sm:grid-cols-[4.5rem_1fr]"
+            >
               <span className="pt-2 text-right text-xs font-medium text-slate-400">
                 {formatHour(hour)}
               </span>
-              <div className="flex min-h-10 w-full flex-col gap-1 rounded-xl border border-slate-100 bg-white p-2">
-                <div className="flex items-center justify-between gap-2 text-[11px]">
-                  <span className={overCap ? "font-bold text-rose-600" : "font-semibold text-sys-800"}>
-                    {inPipeline.length} / {totalCap} คัน
-                  </span>
-                  {overCap && (
-                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                      เกิน cap
+              <div
+                className={`flex min-h-11 w-full flex-col gap-1.5 rounded-xl border p-2 ${
+                  overCap ? "border-rose-200 bg-rose-50/40" : "border-slate-100 bg-white"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={
+                        overCap ? "font-bold text-rose-600" : "font-semibold text-sys-800"
+                      }
+                    >
+                      {inPipeline.length} / {totalCap} คัน
                     </span>
-                  )}
-                  {inPipeline.length === 0 && (
-                    <span className="text-[10px] text-slate-300">ว่าง</span>
-                  )}
+                    {overCap && (
+                      <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                        เกิน cap
+                      </span>
+                    )}
+                    {nextToCall > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                        <Icon name="phone" size={10} />
+                        ต้องเรียกต่อ {nextToCall} คัน
+                      </span>
+                    )}
+                  </span>
+                  {isEmpty && <span className="text-[10px] text-slate-300">ว่าง</span>}
                 </div>
-                <div className="flex items-stretch gap-1" style={{ width: `${Math.max(15, widthPercent)}%` }}>
-                  {grades.map((grade) => {
-                    const color = getGradeColor(grades, grade);
-                    const count = byGrade.get(grade) ?? 0;
-                    if (count === 0) return null;
-                    return (
-                      <div key={grade} title={`${grade}: ${count} คัน`} className={`flex min-w-0 flex-1 items-center gap-1 overflow-hidden rounded ${color.soft} px-1.5 py-0.5`}>
-                        <span className={`h-3 w-1 shrink-0 rounded ${color.bar}`} />
-                        <span className={`truncate text-[10px] font-bold ${color.text}`}>{count}</span>
-                      </div>
-                    );
-                  })}
+
+                {/* แถบ fill เทียบ cap */}
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full ${overCap ? "bg-rose-500" : "bg-sys-500"}`}
+                    style={{ width: `${fillPercent}%` }}
+                  />
                 </div>
+
+                {/* ขั้นตอนของรถใน slot นี้ */}
+                {!isEmpty && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {stageCounts.map(({ stage, count }) => (
+                      <span
+                        key={stage.key}
+                        title={`${stage.label}: ${count} คัน`}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[10px] font-bold ${stage.soft} ${stage.text}`}
+                      >
+                        <span className={`h-2.5 w-2.5 rounded-sm ${stage.bar}`} />
+                        {stage.label}
+                        <span className="rounded bg-white/70 px-1">{count}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
       <p className="mt-3 text-[11px] text-slate-400">
-        จำนวนรถ = ใบนำส่งที่ยังไม่จบ (ไม่รวมที่ผ่านป้อมแล้ว) · cap = จำนวนรับสูงสุดตามแผน
+        จำนวนรถ = ใบนำส่งที่ยังไม่จบ (ไม่รวมที่ผ่านป้อมแล้ว) · cap = จำนวนรับสูงสุดตามแผน ·
+        แถบสีแสดงขั้นตอนปัจจุบันของรถใน slot นั้น
       </p>
     </Panel>
   );
