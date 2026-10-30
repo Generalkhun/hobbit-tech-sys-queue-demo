@@ -168,6 +168,7 @@ export function PageContent(props: PageContentProps) {
         <CallingPage
           bookings={queue.bookings}
           plans={queue.plans}
+          vehicles={vehicleRegistry.vehicles}
           onStatusChange={queue.updateBookingStatus}
           onMoveBooking={queue.moveBooking}
         />
