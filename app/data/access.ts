@@ -5,6 +5,7 @@ const adminPages: PageKey[] = [
   "plans",
   "booking",
   "operations",
+  "operations-history",
   "security",
   "delivery-notes",
   "operation-notes",
@@ -35,6 +36,7 @@ const partnerPages: PageKey[] = [
 const operationsPages: PageKey[] = [
   "plans",
   "operations",
+  "operations-history",
   "queue-check",
 ];
 

@@ -8,9 +8,14 @@ import type { BookingStatus, QueueBooking } from "@/app/types/queue";
 
 export function SecurityPage({
   bookings,
+  onRecordCheckin,
   onStatusChange,
 }: {
   bookings: QueueBooking[];
+  onRecordCheckin: (
+    id: string,
+    atTime: string,
+  ) => { error?: string; lateMinutes: number };
   onStatusChange: (id: string, status: BookingStatus) => string | null;
 }) {
   const [scanId, setScanId] = useState("");
@@ -48,22 +53,31 @@ export function SecurityPage({
       return;
     }
     if (
+      booking.status === "checked-in" ||
       booking.status === "at-gate" ||
       booking.status === "call-requested" ||
-      booking.status === "called"
+      booking.status === "called" ||
+      booking.status === "no-answer"
     ) {
       setNoticeKind("success");
       setNotice(`รถทะเบียน ${booking.plate} ได้รับคิวและอยู่ระหว่างรอเรียกแล้ว`);
       return;
     }
-    const transitionError = onStatusChange(booking.id, "at-gate");
-    if (transitionError) {
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(
+      now.getMinutes(),
+    ).padStart(2, "0")}`;
+    const checkin = onRecordCheckin(booking.id, timeStr);
+    if (checkin.error) {
       setNoticeKind("error");
-      setNotice(transitionError);
+      setNotice(checkin.error);
       return;
     }
+    const lateText = checkin.lateMinutes >= 10
+      ? ` · เช็คอินสาย ${checkin.lateMinutes} นาที`
+      : "";
     setNoticeKind("success");
-    setNotice(`ตรวจสอบสำเร็จ · รถทะเบียน ${booking.plate} ได้รับคิวและออกไปรอเรียกแล้ว`);
+    setNotice(`ตรวจสอบสำเร็จ · รถทะเบียน ${booking.plate} เช็คอินที่ป้อมแล้ว${lateText}`);
     setScanId("");
   }
 
@@ -87,9 +101,11 @@ export function SecurityPage({
             value: String(
               arriving.filter(
                 (booking) =>
+                  booking.status === "checked-in" ||
                   booking.status === "at-gate" ||
                   booking.status === "call-requested" ||
-                  booking.status === "called",
+                  booking.status === "called" ||
+                  booking.status === "no-answer",
               ).length,
             ),
             icon: "shield" as const,

@@ -55,6 +55,14 @@ const statusContent: Record<
     label: "รอเรียกคิว",
     className: "bg-amber-50 text-amber-700 ring-amber-100",
   },
+  "checked-in": {
+    label: "เช็คอินแล้ว",
+    className: "bg-sky-50 text-sky-700 ring-sky-100",
+  },
+  "at-gate": {
+    label: "จัดคิวแล้ว",
+    className: "bg-sky-50 text-sky-700 ring-sky-100",
+  },
   "call-requested": {
     label: "ปศ. แจ้ง รปภ. ให้เรียกรถ",
     className: "bg-amber-50 text-amber-700 ring-amber-100",
@@ -63,9 +71,9 @@ const statusContent: Record<
     label: "รปภ. โทรเรียกแล้ว",
     className: "bg-violet-50 text-violet-700 ring-violet-100",
   },
-  "at-gate": {
-    label: "สแกนแล้ว · รอคิว",
-    className: "bg-sky-50 text-sky-700 ring-sky-100",
+  "no-answer": {
+    label: "โทรแล้วไม่รับ",
+    className: "bg-rose-50 text-rose-700 ring-rose-100",
   },
   completed: {
     label: "ผ่านป้อม · ออกใบนำผ่านแล้ว",

@@ -15,14 +15,14 @@ const queueSteps: {
     key: "ops",
     label: "ทีม operation รับคิว",
     doneWhen: (status) =>
-      ["at-gate", "call-requested", "called", "completed"].includes(status),
+      ["checked-in", "at-gate", "call-requested", "called", "completed"].includes(status),
     activeWhen: (status) => status === "waiting" || status === "confirmed",
   },
   {
     key: "queued",
     label: "จัดคิวแล้ว",
     doneWhen: (status) => ["call-requested", "called", "completed"].includes(status),
-    activeWhen: (status) => status === "at-gate",
+    activeWhen: (status) => status === "at-gate" || status === "checked-in" || status === "no-answer",
   },
   {
     key: "security-call",

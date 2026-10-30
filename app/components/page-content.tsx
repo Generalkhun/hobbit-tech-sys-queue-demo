@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AcknowledgementsPage } from "@/app/components/acknowledgements-page";
 import { BookingPage } from "@/app/components/booking-page";
 import { CallingPage } from "@/app/components/calling-page";
+import { OpsHistoryPage } from "@/app/components/operations/ops-history-page";
 import { DeliveryNotesPage } from "@/app/components/delivery-notes-page";
 import { DirectoryPage } from "@/app/components/directory-page";
 import { DriverPortalPage } from "@/app/components/driver-portal-page";
@@ -22,7 +23,7 @@ import { ShopProfilePage } from "@/app/components/shop-profile-page";
 import { ShopsPage } from "@/app/components/shops-page";
 import { Panel } from "@/app/components/ui";
 import { isDirectoryPage, vehicleTypes } from "@/app/data/directories";
-import { mockBlacklist } from "@/app/data/mock-data";
+import { demoDate, mockBlacklist } from "@/app/data/mock-data";
 import { acknowledgeShopPolicies } from "@/app/data/policy-store";
 import { canManagePlans, getQueueShortcut } from "@/app/data/overview-queue";
 import type { useCapacityConfig } from "@/app/hooks/use-capacity-config";
@@ -106,6 +107,9 @@ export function PageContent(props: PageContentProps) {
         onProgressChange={driverCheckin.setProgress}
         onContactPhonesChange={driverCheckin.setContactPhones}
         onNavigate={onNavigate}
+        onRecordOnlineCheckin={(bookingId, atTime) => {
+          queue.recordCheckinForBooking(bookingId, atTime);
+        }}
       />
     );
   }
@@ -191,14 +195,22 @@ export function PageContent(props: PageContentProps) {
           bookings={queue.bookings}
           plans={queue.plans}
           vehicles={vehicleRegistry.vehicles}
-          onStatusChange={queue.updateBookingStatus}
-          onMoveBooking={queue.moveBooking}
+          capacityConfig={capacity.draftConfig}
+          checkinTimes={queue.checkinTimes}
+          noAnswerCounts={queue.noAnswerCounts}
+          grades={queue.plans.map((plan) => plan.grade)}
+          onTransition={queue.transitionBooking}
+          onRecordCheckin={queue.recordCheckinForBooking}
+          onMarkNoAnswer={queue.markNoAnswer}
         />
       );
+    case "operations-history":
+      return <OpsHistoryPage date={demoDate} />;
     case "security":
       return (
         <SecurityPage
           bookings={queue.bookings}
+          onRecordCheckin={queue.recordCheckinForBooking}
           onStatusChange={queue.updateBookingStatus}
         />
       );

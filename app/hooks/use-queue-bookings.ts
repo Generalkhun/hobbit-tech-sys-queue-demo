@@ -11,11 +11,15 @@ import {
 } from "@/app/data/slot-capacity";
 import { getStatusTransitionError } from "@/app/data/workflow";
 import { isDriverApproved } from "@/app/data/registry";
+import { addOpsLog, createOpsLog } from "@/app/data/ops-log";
+import type { NoteWithAttachments } from "@/app/types/common";
 import type {
   BookingReceipt,
   BookingStatus,
+  CheckinTimes,
   DemoUser,
   DriverRecord,
+  NoAnswerCounts,
   PolicyAcknowledgement,
   QueueBooking,
 } from "@/app/types/queue";
@@ -48,6 +52,8 @@ export function useQueueBookings({
   const [bookings, setBookings] = useState<QueueBooking[]>(mockBookings);
   const [plans, setPlans] = useState(mockPlans);
   const [receipts, setReceipts] = useState<Record<string, BookingReceipt>>({});
+  const [checkinTimes, setCheckinTimes] = useState<CheckinTimes>({});
+  const [noAnswerCounts, setNoAnswerCounts] = useState<NoAnswerCounts>({});
   const resolveCapacity = useMemo(
     () => createCapacityResolver(plans, savedConfig),
     [plans, savedConfig],
@@ -57,16 +63,122 @@ export function useQueueBookings({
     [savedConfig],
   );
 
-  function updateBookingStatus(id: string, status: BookingStatus): string | null {
+  function nowIso() {
+    return new Date().toISOString();
+  }
+
+  function nowTime() {
+    return new Date().toLocaleTimeString("th-TH", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  /** บันทึก log ทุกครั้งที่เปลี่ยนสถานะใน pipeline */
+  function logTransition(
+    booking: QueueBooking,
+    from: BookingStatus,
+    to: BookingStatus,
+    actionLabel: string,
+    value: NoteWithAttachments,
+  ) {
+    addOpsLog(
+      createOpsLog({
+        booking,
+        from,
+        to,
+        actionLabel,
+        note: value.note,
+        attachments: value.attachments,
+        actor: user?.name ?? "ระบบ",
+        at: nowIso(),
+      }),
+    );
+  }
+
+  /** เปลี่ยนสถานะพร้อมหมายเหตุ/รูป (action ทุกครั้งจากหน้า ปศ.) ลง log ด้วย */
+  function transitionBooking(
+    id: string,
+    to: BookingStatus,
+    value: NoteWithAttachments = { note: "", attachments: [] },
+    actionLabel = "",
+  ): string | null {
     const booking = bookings.find((item) => item.id === id);
     if (!booking) return "ไม่พบใบนำส่งที่ต้องการเปลี่ยนสถานะ";
     if (!user) return "กรุณาเข้าสู่ระบบก่อนเปลี่ยนสถานะคิว";
-    const transitionError = getStatusTransitionError(user.role, booking.status, status);
+    const transitionError = getStatusTransitionError(user.role, booking.status, to);
     if (transitionError) return transitionError;
+    const label =
+      actionLabel ||
+      ({
+        "checked-in": "รถเช็คอินแล้ว",
+        "at-gate": "จัดคิวแล้ว",
+        "call-requested": "ปศ. แจ้ง รปภ. ให้โทรเรียกรถ",
+        called: "รปภ. โทรเรียกแล้ว",
+        "no-answer": "รปภ. โทรแล้วไม่รับ",
+        confirmed: "ยืนยันแล้ว",
+        waiting: "รอเรียกคิว",
+        completed: "รถผ่านป้อมแล้ว",
+      } as Partial<Record<BookingStatus, string>>)[to] ||
+      to;
     setBookings((current) =>
-      current.map((item) => (item.id === id ? { ...item, status } : item)),
+      current.map((item) => (item.id === id ? { ...item, status: to } : item)),
     );
+    logTransition(booking, booking.status, to, label, value);
     return null;
+  }
+
+  /** บันทึกการเช็คอิน (online หรือ รปภ.) พร้อมเวลาจริง ตรวจสอบสาย */
+  function recordCheckinForBooking(
+    id: string,
+    atTime: string,
+    value: NoteWithAttachments = { note: "", attachments: [] },
+  ): { error?: string; lateMinutes: number } {
+    const booking = bookings.find((item) => item.id === id);
+    if (!booking) return { error: "ไม่พบใบนำส่ง", lateMinutes: 0 };
+    if (
+      booking.status !== "confirmed" &&
+      booking.status !== "waiting" &&
+      booking.status !== "at-gate"
+    ) {
+      return { error: "ใบนำส่งนี้ไม่สามารถเช็คอินได้ในสถานะปัจจุบัน", lateMinutes: 0 };
+    }
+    const lateMinutes = computeLateMinutes(booking.timeSlot, atTime);
+    const label =
+      lateMinutes >= 10
+        ? `เช็คอินสาย ${lateMinutes} นาที (นัด ${booking.timeSlot})`
+        : `เช็คอินแล้ว · ตรงเวลา (นัด ${booking.timeSlot})`;
+    setCheckinTimes((current) => ({ ...current, [id]: atTime }));
+    setBookings((current) =>
+      current.map((item) => (item.id === id ? { ...item, status: "checked-in" } : item)),
+    );
+    logTransition(booking, booking.status, "checked-in", label, value);
+    return { lateMinutes };
+  }
+
+  /** รปภ. โทรเรียกรถแล้วไม่รับ — นับครั้ง เพิ่มสถานะ no-answer */
+  function markNoAnswer(
+    id: string,
+    value: NoteWithAttachments = { note: "", attachments: [] },
+  ): { error?: string; count: number } {
+    const booking = bookings.find((item) => item.id === id);
+    if (!booking) return { error: "ไม่พบใบนำส่ง", count: 0 };
+    if (booking.status !== "call-requested") {
+      return { error: "รถต้องอยู่ในสถานะ ปศ. แจ้ง รปภ. แล้ว ก่อนโทรไม่รับ", count: 0 };
+    }
+    const count = (noAnswerCounts[id] ?? 0) + 1;
+    setNoAnswerCounts((current) => ({ ...current, [id]: count }));
+    setBookings((current) =>
+      current.map((item) => (item.id === id ? { ...item, status: "no-answer" } : item)),
+    );
+    logTransition(
+      booking,
+      booking.status,
+      "no-answer",
+      `รปภ. โทรแล้วไม่รับ (ครั้งที่ ${count})`,
+      value,
+    );
+    return { count };
   }
 
   function updateReceipt(bookingId: string, receipt: BookingReceipt) {
@@ -111,10 +223,7 @@ export function useQueueBookings({
       plantId: schedule.decision.plantId,
       schedulingReason: schedule.decision.reason,
       id: `SC${datePart}${String(bookings.length + 1).padStart(2, "0")}`,
-      createdAt: new Date().toLocaleTimeString("th-TH", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      createdAt: nowTime(),
       status: "confirmed",
     };
     setBookings((current) => [nextBooking, ...current]);
@@ -168,15 +277,35 @@ export function useQueueBookings({
     return null;
   }
 
+  /** ดั้งเดิม: เปลี่ยนสถานะโดยไม่มี note (เก็บไว้ compatibility) */
+  function updateBookingStatus(id: string, status: BookingStatus): string | null {
+    return transitionBooking(id, status);
+  }
+
   return {
     bookings,
     plans,
     receipts,
+    checkinTimes,
+    noAnswerCounts,
     resolveCapacity,
     isRushHourReopened,
     updateBookingStatus,
+    transitionBooking,
+    recordCheckinForBooking,
+    markNoAnswer,
     updateReceipt,
     createBooking,
     moveBooking,
   };
+}
+
+/** คำนวณความสาย: เวลาเช็คอิน เทียบกับเวลานัดหมายของ slot (นับเฉพาะเกิน 10 นาที) */
+export function computeLateMinutes(timeSlot: string, checkinTime: string) {
+  const [slotHour] = timeSlot.split(":").map(Number);
+  const [hour, minute] = checkinTime.split(":").map(Number);
+  if (Number.isNaN(slotHour) || Number.isNaN(hour) || Number.isNaN(minute)) return 0;
+  const scheduled = slotHour * 60;
+  const actual = hour * 60 + minute;
+  return Math.max(0, actual - scheduled);
 }

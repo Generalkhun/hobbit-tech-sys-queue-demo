@@ -20,6 +20,7 @@ export const navigationGroups: NavigationGroup[] = [
       { id: "plans", label: "แผนรับเหล็ก", icon: "calendar" },
       { id: "booking", label: "ใบนำส่งเศษเหล็ก", icon: "document" },
       { id: "operations", label: "จัดการการจัดส่ง (ปศ.)", icon: "truck" },
+      { id: "operations-history", label: "ประวัติการจัดส่ง", icon: "clipboard" },
       { id: "security", label: "เรียกรถ (รปภ.)", icon: "shield" },
       { id: "driver-pass", label: "ใบนำส่งสำหรับงานนี้", icon: "document" },
       { id: "driver-checkin", label: "เช็คอิน online", icon: "map" },
@@ -67,6 +68,10 @@ export const pageDetails: Record<PageKey, { title: string; subtitle: string }> =
   operations: {
     title: "จัดการการจัดส่ง (ปศ.)",
     subtitle: "กำหนดความจุต่อ slot และโยกรถสลับโรงงานหลัง รปภ. จัดคิว",
+  },
+  "operations-history": {
+    title: "ประวัติการจัดส่ง",
+    subtitle: "Log archive ของทุกการย้ายสถานะใน pipeline",
   },
   security: {
     title: "เรียกรถ (รปภ.)",

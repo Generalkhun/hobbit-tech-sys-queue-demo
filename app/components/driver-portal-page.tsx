@@ -25,6 +25,7 @@ export function DriverPortalPage({
   onProgressChange,
   onContactPhonesChange,
   onNavigate,
+  onRecordOnlineCheckin,
 }: {
   page: PageKey;
   driver: DriverRecord;
@@ -36,6 +37,8 @@ export function DriverPortalPage({
   onProgressChange: (progress: DriverCheckinProgress) => void;
   onContactPhonesChange: (phones: string[]) => void;
   onNavigate: (page: PageKey) => void;
+  /** บันทึกการเช็คอิน online ลง booking/log เมื่อคนขับเช็คอินผ่านลิงก์ */
+  onRecordOnlineCheckin?: (bookingId: string, atTime: string) => void;
 }) {
   const [selectedBookingId, setSelectedBookingId] = useState("");
   const recordedRef = useRef(false);
@@ -83,6 +86,8 @@ export function DriverPortalPage({
         timeStr,
         "ระบบเช็คอิน (ลิงก์)",
       );
+      // อัปเดตสถานะใบนำส่งเป็น "เช็คอินแล้ว" (รอจัดคิว) ผ่าน callback
+      onRecordOnlineCheckin?.(checkinBooking.id, timeStr);
     }
   }, [progress.step, checkinBooking]);
 

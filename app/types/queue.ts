@@ -12,6 +12,7 @@ export type PageKey =
   | "plans"
   | "booking"
   | "operations"
+  | "operations-history"
   | "security"
   | "delivery-notes"
   | "operation-notes"
@@ -35,10 +36,18 @@ export type PageKey =
 export type BookingStatus =
   | "confirmed"
   | "waiting"
+  | "checked-in"
+  | "at-gate"
   | "call-requested"
   | "called"
-  | "at-gate"
+  | "no-answer"
   | "completed";
+
+/** จำนวนครั้งที่โทรแล้วไม่รับ — เก็บต่อ booking (key: bookingId) */
+export type NoAnswerCounts = Record<string, number>;
+
+/** เวลาเช็คอินของรถ (key: bookingId) */
+export type CheckinTimes = Record<string, string>;
 
 export interface DemoUser {
   id: string;

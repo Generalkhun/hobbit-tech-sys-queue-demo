@@ -171,6 +171,9 @@ export function DemoApp() {
           onProgressChange={driverCheckin.setProgress}
           onContactPhonesChange={driverCheckin.setContactPhones}
           onNavigate={navigateInLink}
+          onRecordOnlineCheckin={(bookingId, atTime) => {
+            queue.recordCheckinForBooking(bookingId, atTime);
+          }}
         />
       </AppShell>
     );

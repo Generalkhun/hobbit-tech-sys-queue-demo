@@ -2,32 +2,49 @@ import type { BookingStatus, QueueBooking } from "@/app/types/queue";
 
 export type OperationTab =
   | "delivering"
-  | "confirmed"
-  | "call-requested"
-  | "awaiting-entry"
+  | "all"
+  | "checked-in"
+  | "queueing"
+  | "calling"
   | "received";
 
 export const operationTabs: { id: OperationTab; label: string; statuses: BookingStatus[] }[] = [
   {
     id: "delivering",
-    label: "กำลังจัดส่ง",
-    statuses: ["confirmed", "waiting", "at-gate", "call-requested", "called"],
+    label: "กำลังดำเนินการ",
+    statuses: [
+      "confirmed",
+      "waiting",
+      "checked-in",
+      "at-gate",
+      "call-requested",
+      "called",
+      "no-answer",
+    ],
   },
-  { id: "confirmed", label: "ยืนยัน", statuses: ["at-gate"] },
-  { id: "call-requested", label: "ให้เรียกรถยนต์", statuses: ["call-requested"] },
-  { id: "awaiting-entry", label: "รอเข้าโรงงาน", statuses: ["called"] },
-  { id: "received", label: "รับเข้าโรงงาน", statuses: ["completed"] },
+  { id: "all", label: "ทั้งหมด", statuses: [] },
+  { id: "checked-in", label: "เช็คอินแล้ว", statuses: ["checked-in"] },
+  { id: "queueing", label: "รอจัดคิว / รอเรียก", statuses: ["at-gate", "no-answer"] },
+  { id: "calling", label: "แจ้ง รปภ.", statuses: ["call-requested", "called"] },
+  { id: "received", label: "ผ่านป้อมแล้ว", statuses: ["completed"] },
 ];
 
-/** ข้อความและสีของสถานะในตารางปฏิบัติการ */
+/** ข้อความและสีของสถานะในตารางปฏิบัติการ (สีเดียวกับแผนรับเหล็ก) */
 export const operationStatusStyle: Record<BookingStatus, { label: string; className: string }> = {
-  confirmed: { label: "กำลังจัดส่ง", className: "bg-sky-500" },
-  waiting: { label: "กำลังจัดส่ง", className: "bg-sky-500" },
-  "at-gate": { label: "ยืนยันแล้ว", className: "bg-emerald-500" },
-  "call-requested": { label: "ให้เรียกรถยนต์", className: "bg-amber-500" },
-  called: { label: "รอเข้าโรงงาน", className: "bg-violet-500" },
-  completed: { label: "รับเข้าโรงงาน", className: "bg-emerald-600" },
+  confirmed: { label: "ยังไม่ Check-in", className: "bg-slate-400" },
+  waiting: { label: "ยังไม่ Check-in", className: "bg-slate-400" },
+  "checked-in": { label: "รอจัดคิว", className: "bg-sky-500" },
+  "at-gate": { label: "รอเรียก", className: "bg-sky-600" },
+  "call-requested": { label: "แจ้ง รปภ. แล้ว", className: "bg-amber-500" },
+  called: { label: "โทรเรียกแล้ว", className: "bg-violet-500" },
+  "no-answer": { label: "โทรไม่รับ", className: "bg-rose-500" },
+  completed: { label: "ผ่าน รปภ. แล้ว", className: "bg-emerald-600" },
 };
+
+/** สถานะที่ยังอยู่ใน pipeline (ยังไม่จบ) */
+export function isInPipelineStatus(status: BookingStatus) {
+  return status !== "completed";
+}
 
 export function getTodayBookings(bookings: QueueBooking[], date: string) {
   return bookings.filter((booking) => booking.date === date);
@@ -35,6 +52,7 @@ export function getTodayBookings(bookings: QueueBooking[], date: string) {
 
 export function filterByTab(bookings: QueueBooking[], tab: OperationTab) {
   const statuses = operationTabs.find((item) => item.id === tab)?.statuses ?? [];
+  if (statuses.length === 0) return bookings;
   return bookings.filter((booking) => statuses.includes(booking.status));
 }
 
@@ -44,14 +62,13 @@ export function countByTab(bookings: QueueBooking[]): Record<OperationTab, numbe
   ) as Record<OperationTab, number>;
 }
 
-/** การ์ดสรุป: "ติดต่อไม่ได้" ยังไม่มีสถานะนี้ในระบบ จึงเป็น 0 เสมอ */
 export function getSummaryCounts(bookings: QueueBooking[]) {
   const counts = countByTab(bookings);
   return {
     delivering: counts.delivering,
-    callRequested: counts["call-requested"],
-    unreachable: 0,
-    confirmed: counts.confirmed,
+    callRequested: counts.calling,
+    unreachable: counts.queueing,
+    confirmed: counts["checked-in"],
   };
 }
 
@@ -66,4 +83,34 @@ export function getVehicleTypeByPlate(
   plate: string,
 ) {
   return vehicles.find((vehicle) => vehicle.plate === plate)?.vehicleType || "-";
+}
+
+/** เวลานัดหมายจาก slot เช่น "09:00–10:00" → "09:00" */
+export function slotStart(slot: string) {
+  const [start] = slot.split(/[–-]/);
+  return start?.trim() ?? slot;
+}
+
+/** จำนวนนาทีที่รอแล้ว ตั้งแต่เวลาเช็คอินจนถึงตอนนี้ (สำหรับสถานะรอจัดคิว/โทรไม่ติด) */
+export function waitingMinutes(checkinTime: string | undefined, now?: Date) {
+  if (!checkinTime) return 0;
+  const [hour, minute] = checkinTime.split(":").map(Number);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return 0;
+  const nowDate = now ?? new Date();
+  const start = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth(),
+    nowDate.getDate(),
+    hour,
+    minute,
+  );
+  return Math.max(0, Math.floor((nowDate.getTime() - start.getTime()) / 60000));
+}
+
+/** เปรียบเทียบเวลา "HH:MM" */
+export function compareTime(a: string, b: string) {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+  return a.localeCompare(b);
 }
