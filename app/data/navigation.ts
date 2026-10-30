@@ -43,6 +43,12 @@ export const navigationGroups: NavigationGroup[] = [
       { id: "vehicle-types", label: "ประเภทรถ", icon: "weight" },
     ],
   },
+  {
+    label: "เอกสารรับทราบ",
+    items: [
+      { id: "acknowledgements", label: "เอกสารรับทราบ", icon: "file" },
+    ],
+  },
 ];
 
 export const pageDetails: Record<PageKey, { title: string; subtitle: string }> = {
@@ -117,5 +123,25 @@ export const pageDetails: Record<PageKey, { title: string; subtitle: string }> =
   "driver-queue": {
     title: "แถบรอคิว",
     subtitle: "ติดตามสถานะการติดต่อกลับจาก SYS",
+  },
+  "fastlane-rules": {
+    title: "ตั้งค่ากติกา Fastlane",
+    subtitle: "กำหนดเกณฑ์การปรับสถานะ RP สำหรับร้านค้าและผู้ขาย",
+  },
+  "policy-documents": {
+    title: "จัดการเอกสารรับทราบ",
+    subtitle: "เพิ่มและติดตามเอกสารที่ร้านค้าและผู้ขายต้องรับทราบ",
+  },
+  "shop-profile": {
+    title: "โปรไฟล์ร้านค้า",
+    subtitle: "จัดการข้อมูลและเอกสารของร้านค้า",
+  },
+  "seller-profile": {
+    title: "โปรไฟล์ผู้ขาย",
+    subtitle: "จัดการข้อมูลและเอกสารของผู้ขาย",
+  },
+  acknowledgements: {
+    title: "เอกสารรับทราบ",
+    subtitle: "เอกสารที่ต้องอ่านและยืนยันรับทราบ",
   },
 };

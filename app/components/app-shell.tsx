@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { getAllowedPages } from "@/app/data/access";
 import { Icon } from "@/app/components/icons";
 import { navigationGroups, pageDetails } from "@/app/data/navigation";
+import { getUnreadAcknowledgements } from "@/app/data/policy-documents";
 import type { DemoUser, PageKey } from "@/app/types/queue";
 
 export function AppShell({
@@ -10,12 +11,14 @@ export function AppShell({
   onNavigate,
   onLogout,
   children,
+  unreadAckCount = 0,
 }: {
   user: DemoUser;
   page: PageKey;
   onNavigate: (page: PageKey) => void;
   onLogout: () => void;
   children: ReactNode;
+  unreadAckCount?: number;
 }) {
   const activePage = pageDetails[page];
   const allowedPages = getAllowedPages(user.role);
@@ -48,6 +51,7 @@ export function AppShell({
                 <div className="flex gap-1 lg:flex-col">
                   {visibleItems.map((item) => {
                     const active = page === item.id;
+                    const showBadge = item.id === "acknowledgements" && unreadAckCount > 0;
                     return (
                       <button
                         type="button"
@@ -62,6 +66,11 @@ export function AppShell({
                       >
                         <Icon name={item.icon} size={17} />
                         <span className="font-medium">{item.label}</span>
+                        {showBadge && (
+                          <span className="ml-auto grid h-5 min-w-[20px] place-items-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                            {unreadAckCount > 99 ? "99+" : unreadAckCount}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

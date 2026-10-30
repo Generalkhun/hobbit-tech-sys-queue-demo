@@ -11,6 +11,7 @@ import {
   getSellerSuspensionBlock,
 } from "@/app/data/sellers";
 import type { NoteWithAttachments } from "@/app/types/common";
+import type { RPStatus } from "@/app/types/queue";
 import type {
   NewSellerInput,
   NewShopInput,
@@ -120,6 +121,28 @@ export function useSellerDirectory(actorName: string) {
     [],
   );
 
+  const updateSellerRPStatus = useCallback(
+    (sellerId: string, rpStatus: RPStatus) => {
+      setSellers((current) =>
+        current.map((item) =>
+          item.id === sellerId ? { ...item, rpStatus } : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  const updateShopRPStatus = useCallback(
+    (shopId: string, rpStatus: RPStatus) => {
+      setShops((current) =>
+        current.map((item) =>
+          item.id === shopId ? { ...item, rpStatus } : item,
+        ),
+      );
+    },
+    [],
+  );
+
   const getBookingBlock = useCallback(
     (retailerName: string, brokerName: string) =>
       getSellerSuspensionBlock(sellers, shops, retailerName, brokerName),
@@ -137,6 +160,8 @@ export function useSellerDirectory(actorName: string) {
     moveShop,
     updateSellerProfile,
     updateShopProfile,
+    updateSellerRPStatus,
+    updateShopRPStatus,
     getBookingBlock,
   };
 }

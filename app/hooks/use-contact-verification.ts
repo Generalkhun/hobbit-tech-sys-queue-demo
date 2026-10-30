@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isValidPhone, isValidVerificationCode } from "@/app/data/driver-checkin";
+import { recordCheckin } from "@/app/data/checkin-log";
 import type {
   DriverCheckinProgress,
   PageKey,
@@ -12,12 +13,14 @@ export function useContactVerification({
   onProgressChange,
   onVerifyCode,
   onNavigate,
+  onRecordCheckin,
 }: {
   checkinBooking: QueueBooking | undefined;
   contactPhone: string;
   onProgressChange: (progress: DriverCheckinProgress) => void;
   onVerifyCode: (bookingId: string, code: string) => string | null;
   onNavigate: (page: PageKey) => void;
+  onRecordCheckin?: (booking: QueueBooking) => void;
 }) {
   const [verificationCode, setVerificationCode] = useState("");
   const [codeError, setCodeError] = useState("");
@@ -43,6 +46,7 @@ export function useContactVerification({
       return;
     }
     setCodeError("");
+    onRecordCheckin?.(checkinBooking);
     onProgressChange({ bookingId: checkinBooking.id, step: "complete" });
     onNavigate("driver-queue");
   }

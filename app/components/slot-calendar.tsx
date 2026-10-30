@@ -21,17 +21,30 @@ function SlotCard({
   grades,
   onSelect,
   readOnly,
+  maxTotal,
 }: {
   view: SlotView;
   grades: string[];
   onSelect: (slot: string) => void;
   readOnly: boolean;
+  maxTotal: number;
 }) {
   if (view.closedReason) {
     return (
-      <div className="flex min-h-16 items-center rounded-xl bg-slate-50 px-4 text-xs text-slate-400 [background-image:repeating-linear-gradient(135deg,transparent_0_8px,rgba(148,163,184,0.12)_8px_16px)]">
-        {view.closedReason}
-      </div>
+      <button
+        type="button"
+        disabled={readOnly}
+        aria-label={`เปิดรับช่วง ${view.slot} กลับ`}
+        className="group flex min-h-16 w-full items-center gap-3 rounded-xl bg-slate-50 px-4 text-left text-xs text-slate-400 [background-image:repeating-linear-gradient(135deg,transparent_0_8px,rgba(148,163,184,0.12)_8px_16px)] enabled:hover:border enabled:hover:border-sys-300 enabled:hover:bg-slate-100 enabled:hover:text-slate-600 disabled:cursor-default"
+        onClick={() => onSelect(view.slot)}
+      >
+        <span className="flex-1">{view.closedReason}</span>
+        {!readOnly && (
+          <span className="rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-semibold text-sys-700 opacity-0 transition group-enabled:group-hover:opacity-100">
+            กดเพื่อเปิดรับกลับ
+          </span>
+        )}
+      </button>
     );
   }
   if (view.manualClosure !== undefined) {
@@ -56,6 +69,7 @@ function SlotCard({
   }
   const entries = Object.entries(view.capacities);
   const total = entries.reduce((sum, [, value]) => sum + value, 0);
+  const widthPercent = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
 
   return (
     <button
@@ -65,39 +79,46 @@ function SlotCard({
       className="group flex min-h-16 w-full flex-col gap-2 rounded-xl border border-slate-100 bg-white p-2 text-left transition enabled:hover:border-sys-300 enabled:hover:shadow-md disabled:cursor-default sm:flex-row sm:items-stretch"
       onClick={() => onSelect(view.slot)}
     >
-      <div className="flex min-w-0 flex-1 gap-1.5">
-        {entries.map(([grade, capacity]) => {
-          const color = getGradeColor(grades, grade);
-          const booked = view.booked[grade] ?? 0;
-          return (
-            <div
-              key={grade}
-              title={`${grade}: ${capacity} คัน`}
-              style={
-                capacity > 0
-                  ? { flex: `${capacity} 1 0%` }
-                  : { flex: "0 0 2.5rem" }
-              }
-              className={`flex min-w-0 overflow-hidden rounded-lg ${color.soft}`}
-            >
-              <span className={`w-1.5 shrink-0 ${color.bar}`} />
-              <span className={`min-w-0 px-2 py-1 ${color.text}`}>
-                <span className="block truncate text-[11px] font-medium">{grade}</span>
-                <span className="block truncate text-sm font-bold">
-                  {capacity}
-                  {booked > 0 && (
-                    <span className="ml-1 text-[10px] font-medium opacity-70">
-                      ({booked})
-                    </span>
-                  )}
+      <div className="flex min-w-0 flex-1 items-stretch">
+        <div className="flex min-w-0 gap-1.5" style={{ width: `${Math.max(20, widthPercent)}%` }}>
+          {entries.map(([grade, capacity]) => {
+            const color = getGradeColor(grades, grade);
+            const booked = view.booked[grade] ?? 0;
+            return (
+              <div
+                key={grade}
+                title={`${grade}: ${capacity} คัน`}
+                style={
+                  capacity > 0
+                    ? { flex: `${capacity} 1 0%` }
+                    : { flex: "0 0 2.5rem" }
+                }
+                className={`flex min-w-0 overflow-hidden rounded-lg ${color.soft}`}
+              >
+                <span className={`w-1.5 shrink-0 ${color.bar}`} />
+                <span className={`min-w-0 px-2 py-1 ${color.text}`}>
+                  <span className="block truncate text-[11px] font-medium">{grade}</span>
+                  <span className="block truncate text-sm font-bold">
+                    {capacity}
+                    {booked > 0 && (
+                      <span className="ml-1 text-[10px] font-medium opacity-70">
+                        ({booked})
+                      </span>
+                    )}
+                  </span>
                 </span>
-              </span>
-            </div>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="flex shrink-0 items-center justify-between gap-2 px-2 text-xs text-slate-400 sm:flex-col sm:justify-center">
+      <div className="flex shrink-0 items-center justify-between gap-2 px-2 text-xs text-slate-400 sm:w-28 sm:flex-col sm:justify-center">
         <span className="font-semibold text-sys-800">รวม {total} คัน</span>
+        {view.rushHourReopened && (
+          <span className="rounded-full bg-sys-50 px-2 py-0.5 text-[10px] font-semibold text-sys-700">
+            เปิดรับแล้ว
+          </span>
+        )}
         {view.customized && (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
             ปรับแล้ว
@@ -120,6 +141,13 @@ export function SlotCalendar({
   readOnly?: boolean;
 }) {
   const bySlot = new Map(views.map((view) => [view.slot, view]));
+  const maxTotal = Math.max(
+    1,
+    ...views.map((view) => {
+      const entries = Object.entries(view.capacities);
+      return entries.reduce((sum, [, value]) => sum + value, 0);
+    }),
+  );
   return (
     <Panel className="p-5 sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -137,7 +165,7 @@ export function SlotCalendar({
               <span className="pt-2 text-right text-xs font-medium text-slate-400">
                 {formatHour(hour)}
               </span>
-              {view && <SlotCard view={view} grades={grades} onSelect={onSelect} readOnly={readOnly} />}
+              {view && <SlotCard view={view} grades={grades} onSelect={onSelect} readOnly={readOnly} maxTotal={maxTotal} />}
             </div>
           );
         })}

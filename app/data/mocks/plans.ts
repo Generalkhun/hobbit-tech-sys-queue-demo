@@ -8,7 +8,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 120,
     reserved: 94,
     slotsOpen: 4,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 4,
   },
   {
@@ -18,7 +18,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 100,
     reserved: 82,
     slotsOpen: 3,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 4,
   },
   {
@@ -28,7 +28,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 50,
     reserved: 42,
     slotsOpen: 2,
-    window: "09:00–17:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 4,
   },
   {
@@ -38,7 +38,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 100,
     reserved: 68,
     slotsOpen: 4,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 3,
   },
   {
@@ -48,7 +48,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 80,
     reserved: 54,
     slotsOpen: 3,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 3,
   },
   {
@@ -58,7 +58,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 45,
     reserved: 22,
     slotsOpen: 2,
-    window: "09:00–17:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 3,
   },
   {
@@ -68,7 +68,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 60,
     reserved: 40,
     slotsOpen: 3,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 4,
   },
   {
@@ -78,7 +78,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 70,
     reserved: 30,
     slotsOpen: 4,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 3,
   },
   {
@@ -88,7 +88,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 65,
     reserved: 48,
     slotsOpen: 3,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 4,
   },
   {
@@ -98,7 +98,7 @@ export const mockPlans: PlanRow[] = [
     dailyLimit: 55,
     reserved: 21,
     slotsOpen: 4,
-    window: "08:00–16:00",
+    window: "00:00–24:00",
     maxVehiclesPerSlot: 3,
   },
 ];

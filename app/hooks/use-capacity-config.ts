@@ -6,6 +6,7 @@ import {
   emptyCapacityConfig,
   resetSlotCapacities,
   setHourlyDefault,
+  setReopenOverride,
   setSlotCapacities,
   setSlotClosure,
   type GradeCapacities,
@@ -36,6 +37,18 @@ export function useCapacityConfig() {
         slot,
         closureReason,
       ),
+    );
+  }
+
+  /** เปิดรับ (หรือปิด) slot ที่เป็น rush hour กลับ */
+  function changeReopenOverride(
+    date: string,
+    plantId: string,
+    slot: string,
+    reopen: boolean,
+  ) {
+    setDraftConfig((current) =>
+      setReopenOverride(current, date, plantId, slot, reopen),
     );
   }
 
@@ -77,6 +90,7 @@ export function useCapacityConfig() {
     savedDays,
     changeHourlyDefault,
     changeSlotCapacities,
+    changeReopenOverride,
     resetSlotCapacity,
     saveDay,
     editDay,

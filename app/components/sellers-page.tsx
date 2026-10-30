@@ -4,15 +4,17 @@ import { useState } from "react";
 import { SellerCreatePage } from "@/app/components/sellers/seller-create-page";
 import { SellerDetail, type SellerDetailProps } from "@/app/components/sellers/seller-detail";
 import { SellerList } from "@/app/components/sellers/seller-list";
+import type { RPStatus } from "@/app/types/queue";
 import type { NewSellerInput } from "@/app/types/seller";
 
 type SellersPageProps = Omit<SellerDetailProps, "seller" | "onBack"> & {
   onAddSeller: (input: NewSellerInput) => void;
+  onUpdateRPStatus?: (sellerId: string, rpStatus: RPStatus) => void;
 };
 
 type View = { kind: "list" } | { kind: "create" } | { kind: "detail"; id: string };
 
-export function SellersPage({ onAddSeller, ...detailProps }: SellersPageProps) {
+export function SellersPage({ onAddSeller, onUpdateRPStatus, ...detailProps }: SellersPageProps) {
   const [view, setView] = useState<View>({ kind: "list" });
   const backToList = () => setView({ kind: "list" });
   const seller =
@@ -43,5 +45,5 @@ export function SellersPage({ onAddSeller, ...detailProps }: SellersPageProps) {
       />
     );
   }
-  return <SellerDetail key={seller.id} seller={seller} onBack={backToList} {...detailProps} />;
+  return <SellerDetail key={seller.id} seller={seller} onBack={backToList} onUpdateRPStatus={onUpdateRPStatus} {...detailProps} />;
 }

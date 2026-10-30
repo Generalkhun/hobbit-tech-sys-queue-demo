@@ -1,5 +1,5 @@
-export const FIRST_SLOT_HOUR = 7;
-export const LAST_SLOT_HOUR = 17;
+export const FIRST_SLOT_HOUR = 0;
+export const LAST_SLOT_HOUR = 23;
 export const FIRST_BOOKABLE_HOUR = 8;
 
 function toMinutes(value: string) {

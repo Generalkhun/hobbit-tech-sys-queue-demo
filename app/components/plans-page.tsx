@@ -23,6 +23,16 @@ import {
 import { formatSlot, slotHours } from "@/app/data/slot-time";
 import type { PlanRow, QueueBooking } from "@/app/types/queue";
 
+/** เปิดรับ slot ที่เป็น rush hour ได้อีกครั้ง (ยกเลิกการปิดถาวร) */
+export function isRushHourOpen(
+  config: SlotCapacityConfig,
+  date: string,
+  plantId: string,
+  slot: string,
+) {
+  return config.reopenOverrides[`${date}|${plantId}|${slot}`] === true;
+}
+
 export function PlansPage({
   date,
   onDateChange,
@@ -38,6 +48,7 @@ export function PlansPage({
   onHourlyDefaultChange,
   onSlotCapacitiesChange,
   onSlotCapacitiesReset,
+  onReopenChange,
 }: {
   date: string;
   onDateChange: (date: string) => void;
@@ -60,6 +71,13 @@ export function PlansPage({
     closureReason: string | null,
   ) => void;
   onSlotCapacitiesReset: (date: string, plantId: string, slot: string) => void;
+  /** เปิด/ปิดการรับรถช่วง rush hour ของ slot นั้น */
+  onReopenChange: (
+    date: string,
+    plantId: string,
+    slot: string,
+    reopen: boolean,
+  ) => void;
 }) {
   const [plantId, setPlantId] = useState(plants[0].id);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
@@ -84,9 +102,13 @@ export function PlansPage({
     }
     return {
       slot,
-      closedReason: isSlotClosed(plantId, slot)
-        ? `ปิดรับ · ช่วง Rush Hour ของ ${plant.name}`
-        : undefined,
+      rushHourClosed: isSlotClosed(plantId, slot),
+      rushHourReopened: isRushHourOpen(capacityConfig, date, plantId, slot),
+      closedReason:
+        isSlotClosed(plantId, slot) &&
+        !isRushHourOpen(capacityConfig, date, plantId, slot)
+          ? `ปิดรับ · ช่วง Rush Hour ของ ${plant.name}`
+          : undefined,
       manualClosure: getSlotClosure(capacityConfig, date, plantId, slot),
       capacities: getSlotCapacities(capacityConfig, plans, date, plantId, slot, {
         ignoreClosure: true,
@@ -169,8 +191,13 @@ export function PlansPage({
           initial={editingView.capacities}
           booked={editingView.booked}
           customized={editingView.customized}
+          rushHourClosed={editingView.rushHourClosed}
+          rushHourReopened={editingView.rushHourReopened}
           onClose={() => setEditingSlot(null)}
           closureReason={editingView.manualClosure}
+          onReopenChange={(reopen) =>
+            onReopenChange(date, plantId, editingView.slot, reopen)
+          }
           onSave={(capacities, closureReason) => {
             onSlotCapacitiesChange(
               date,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShopCreatePage } from "@/app/components/shops/shop-create-page";
 import { ShopDetail } from "@/app/components/shops/shop-detail";
 import { ShopList } from "@/app/components/shops/shop-list";
+import type { RPStatus } from "@/app/types/queue";
 import type {
   NewShopInput,
   ProfilePatch,
@@ -21,6 +22,7 @@ export function ShopsPage({
   onAddShop,
   onMoveShop,
   onUpdateProfile,
+  onUpdateRPStatus,
 }: {
   sellers: Seller[];
   shops: SellerShop[];
@@ -29,6 +31,7 @@ export function ShopsPage({
   onAddShop: (input: NewShopInput) => void;
   onMoveShop: (input: ShopMoveInput) => void;
   onUpdateProfile: (shopId: string, profile: ProfilePatch) => void;
+  onUpdateRPStatus?: (shopId: string, rpStatus: RPStatus) => void;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -67,6 +70,7 @@ export function ShopsPage({
       onBack={() => setSelectedId(null)}
       onMoveShop={onMoveShop}
       onUpdateProfile={onUpdateProfile}
+      onUpdateRPStatus={onUpdateRPStatus}
     />
   );
 }

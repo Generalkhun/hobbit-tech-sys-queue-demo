@@ -59,17 +59,13 @@ export function sumDemand(byGrade: DemandKgByGrade | undefined) {
 }
 
 export function sumDayDemand(demand: DailyDemand, date: string) {
-  return Object.values(demand[date] ?? {}).reduce(
-    (sum, byGrade) => sum + sumDemand(byGrade),
-    0,
-  );
+  return sumDemand(demand[date]);
 }
 
 export function setDayDemand(
   demand: DailyDemand,
   date: string,
-  plantId: string,
   byGrade: DemandKgByGrade,
 ): DailyDemand {
-  return { ...demand, [date]: { ...demand[date], [plantId]: byGrade } };
+  return { ...demand, [date]: byGrade };
 }

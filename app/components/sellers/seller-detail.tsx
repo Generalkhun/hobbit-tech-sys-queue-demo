@@ -10,15 +10,19 @@ import { SellerShopsPanel } from "@/app/components/sellers/seller-shops-panel";
 import { BackLink } from "@/app/components/shared/back-link";
 import { LocationEditor } from "@/app/components/shared/location-editor";
 import { HistoryPanel } from "@/app/components/shared/history-table";
+import { RPStatusBadge, RPStatusSelect } from "@/app/components/shared/rp-status-badge";
 import { SellerStatusBadge } from "@/app/components/shared/seller-status-badge";
 import { TabBar } from "@/app/components/shared/tab-bar";
+import { CheckinHistoryPanel } from "@/app/components/shared/checkin-history-panel";
 import { Button, Panel } from "@/app/components/ui";
 import {
   buildSellerMoveRows,
   buildSuspensionRows,
   getShopsOfSeller,
 } from "@/app/data/sellers";
+import { getCheckinLogsBySeller } from "@/app/data/checkin-log";
 import type { NoteWithAttachments } from "@/app/types/common";
+import type { RPStatus } from "@/app/types/queue";
 import type {
   ProfilePatch,
   Seller,
@@ -28,12 +32,13 @@ import type {
   SuspensionRecord,
 } from "@/app/types/seller";
 
-type DetailTab = "info" | "moves" | "suspensions";
+type DetailTab = "info" | "moves" | "suspensions" | "checkins";
 
 const tabs: { id: DetailTab; label: string }[] = [
   { id: "info", label: "ข้อมูลผู้ขาย" },
   { id: "moves", label: "ประวัติการเปลี่ยนร้านค้าย่อย" },
   { id: "suspensions", label: "ประวัติการระงับ" },
+  { id: "checkins", label: "ประวัติการเช็คอิน" },
 ];
 
 export interface SellerDetailProps {
@@ -48,6 +53,7 @@ export interface SellerDetailProps {
   onRelease: (sellerId: string, value: NoteWithAttachments) => void;
   onMoveShop: (input: ShopMoveInput) => void;
   onUpdateProfile: (sellerId: string, profile: ProfilePatch) => void;
+  onUpdateRPStatus?: (sellerId: string, rpStatus: RPStatus) => void;
 }
 
 export function SellerDetail({
@@ -62,9 +68,13 @@ export function SellerDetail({
   onRelease,
   onMoveShop,
   onUpdateProfile,
+  onUpdateRPStatus,
 }: SellerDetailProps) {
   const [tab, setTab] = useState<DetailTab>("info");
   const [action, setAction] = useState<SellerAction | null>(null);
+  const [rpStatusDraft, setRpStatusDraft] = useState<RPStatus | undefined>(
+    seller.rpStatus,
+  );
   const isSuspended = seller.status === "suspended";
 
   function confirm(value: NoteWithAttachments, targetSellerId: string | null) {
@@ -134,6 +144,33 @@ export function SellerDetail({
               </div>
             ))}
           </Panel>
+          {canManage && (
+            <Panel className="p-5 sm:p-6">
+              <div className="flex flex-wrap items-center gap-4">
+                <div>
+                  <p className="text-xs text-slate-400">สถานะ RP</p>
+                  <p className="mt-1">
+                    <RPStatusBadge status={seller.rpStatus} />
+                  </p>
+                </div>
+                <div className="min-w-40">
+                  <RPStatusSelect
+                    value={rpStatusDraft}
+                    onChange={setRpStatusDraft}
+                  />
+                </div>
+                {rpStatusDraft !== seller.rpStatus && onUpdateRPStatus && (
+                  <Button
+                    onClick={() => {
+                      onUpdateRPStatus(seller.id, rpStatusDraft ?? "normal");
+                    }}
+                  >
+                    บันทึกสถานะ RP
+                  </Button>
+                )}
+              </div>
+            </Panel>
+          )}
           <LocationEditor
             key={`${seller.id}-${seller.province}-${seller.address}-${seller.photo ?? ""}`}
             location={seller}
@@ -165,6 +202,14 @@ export function SellerDetail({
           title="ประวัติการระงับ"
           emptyText="ยังไม่มีประวัติการระงับ"
           rows={buildSuspensionRows(suspensions, seller.id)}
+        />
+      )}
+
+      {tab === "checkins" && (
+        <CheckinHistoryPanel
+          title="ประวัติการเช็คอิน"
+          logs={getCheckinLogsBySeller(seller.name)}
+          emptyText="ยังไม่มีประวัติการเช็คอิน"
         />
       )}
 

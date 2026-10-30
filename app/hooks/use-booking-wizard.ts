@@ -32,6 +32,7 @@ export function useBookingWizard({
   onCreate,
   onAcknowledgePolicies,
   resolveCapacity,
+  isRushHourReopened,
   draft,
   viewBooking,
   onDraftChange,
@@ -85,6 +86,16 @@ export function useBookingWizard({
     plans,
     bookings,
     resolveCapacity,
+    isRushHourReopened,
+  );
+  const unavailableSlots = bookableSlots.filter(
+    (slot) => !schedulePlant(
+      { date, timeSlot: slot, grade, estimatedTons },
+      plans,
+      bookings,
+      resolveCapacity,
+      isRushHourReopened,
+    ).available,
   );
   const shopHasAcknowledged = hasCurrentPolicyAcknowledgement(
     retailer,
@@ -249,6 +260,7 @@ export function useBookingWizard({
     heavyWeight,
     lightWeight,
     hasValidWeights,
+    unavailableSlots,
     shopHasAcknowledged,
     privacyAccepted,
     setPrivacyAccepted,

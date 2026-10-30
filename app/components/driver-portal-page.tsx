@@ -8,6 +8,7 @@ import { DriverPassView } from "@/app/components/driver/driver-pass-view";
 import { QueueView } from "@/app/components/driver/queue-view";
 import { ReviewStep } from "@/app/components/driver/review-step";
 import { replacePrimaryPhone } from "@/app/data/driver-checkin";
+import { recordCheckin } from "@/app/data/checkin-log";
 import { useContactVerification } from "@/app/hooks/use-contact-verification";
 import { usePhoneEditor } from "@/app/hooks/use-phone-editor";
 import { useRemoteCheckin } from "@/app/hooks/use-remote-checkin";
@@ -62,6 +63,21 @@ export function DriverPortalPage({
     onProgressChange,
     onVerifyCode,
     onNavigate,
+    onRecordCheckin: (booking) => {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      recordCheckin(
+        booking.id,
+        booking.retailer,
+        booking.broker,
+        booking.driver,
+        booking.plate,
+        booking.date,
+        booking.timeSlot,
+        timeStr,
+        "ระบบเช็คอิน",
+      );
+    },
   });
   const phoneEditor = usePhoneEditor(contactPhones, onContactPhonesChange);
 

@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import { getBlacklistReason, hasCurrentPolicyAcknowledgement } from "@/app/data/eligibility";
 import { mockBlacklist, mockBookings, mockPlans, policyVersion } from "@/app/data/mock-data";
 import { canMoveBookingToPlant, schedulePlant } from "@/app/data/scheduling";
-import { createCapacityResolver, type SlotCapacityConfig } from "@/app/data/slot-capacity";
+import {
+  createCapacityResolver,
+  createRushHourOverrideResolver,
+  type SlotCapacityConfig,
+} from "@/app/data/slot-capacity";
 import { getStatusTransitionError } from "@/app/data/workflow";
 import { isDriverApproved } from "@/app/data/registry";
 import type {
@@ -47,6 +51,10 @@ export function useQueueBookings({
   const resolveCapacity = useMemo(
     () => createCapacityResolver(plans, savedConfig),
     [plans, savedConfig],
+  );
+  const isRushHourReopened = useMemo(
+    () => createRushHourOverrideResolver(savedConfig),
+    [savedConfig],
   );
 
   function updateBookingStatus(id: string, status: BookingStatus): string | null {
@@ -93,6 +101,7 @@ export function useQueueBookings({
       plans,
       bookings,
       resolveCapacity,
+      isRushHourReopened,
     );
     if (!schedule.available) return { error: schedule.reason };
 
@@ -134,6 +143,7 @@ export function useQueueBookings({
       plans,
       bookings,
       resolveCapacity,
+      isRushHourReopened,
     );
     if (!result.available) return result.reason;
 
@@ -163,6 +173,7 @@ export function useQueueBookings({
     plans,
     receipts,
     resolveCapacity,
+    isRushHourReopened,
     updateBookingStatus,
     updateReceipt,
     createBooking,

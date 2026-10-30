@@ -8,13 +8,8 @@ import type { DailyDemand, DemandKgByGrade } from "@/app/types/plans";
 export function useDailyDemand() {
   const [demand, setDemand] = useState<DailyDemand>(mockDailyDemand);
 
-  function saveDemand(date: string, byPlant: Record<string, DemandKgByGrade>) {
-    setDemand((current) =>
-      Object.entries(byPlant).reduce(
-        (next, [plantId, byGrade]) => setDayDemand(next, date, plantId, byGrade),
-        current,
-      ),
-    );
+  function saveDemand(date: string, byGrade: DemandKgByGrade) {
+    setDemand((current) => setDayDemand(current, date, byGrade));
   }
 
   return { demand, saveDemand };

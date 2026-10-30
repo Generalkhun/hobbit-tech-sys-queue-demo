@@ -7,6 +7,7 @@ import { ManageButton } from "@/app/components/shared/manage-button";
 import { SearchInput } from "@/app/components/shared/search-input";
 import { SectionHeader } from "@/app/components/shared/section-header";
 import { TabBar } from "@/app/components/shared/tab-bar";
+import { RPStatusBadge } from "@/app/components/shared/rp-status-badge";
 import { Icon } from "@/app/components/icons";
 import { Button, Panel } from "@/app/components/ui";
 import { getSellerName } from "@/app/data/sellers";
@@ -77,6 +78,7 @@ export function ShopList({
               <th className="px-4 py-3.5">ชื่อ</th>
               <th className="px-4 py-3.5">ผู้ขาย</th>
               <th className="px-4 py-3.5">จังหวัด</th>
+              <th className="px-4 py-3.5">สถานะ RP</th>
               <th className="px-6 py-3.5 text-right">จัดการ</th>
             </tr>
           </thead>
@@ -94,6 +96,9 @@ export function ShopList({
                   {getSellerName(sellers, item.sellerId)}
                 </td>
                 <td className="px-4 py-4 text-slate-500">{item.province}</td>
+                <td className="px-4 py-4">
+                  <RPStatusBadge status={item.rpStatus} />
+                </td>
                 <td className="px-6 py-4 text-right">
                   <ManageButton name={item.name} onClick={() => onManage(item.id)} />
                 </td>

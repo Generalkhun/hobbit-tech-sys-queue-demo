@@ -16,25 +16,29 @@ const adminPages: PageKey[] = [
   "provinces",
   "vehicle-types",
   "settings",
+  "fastlane-rules",
+  "policy-documents",
+  "acknowledgements",
 ];
 
 const partnerPages: PageKey[] = [
-  "overview",
   "booking",
   "delivery-notes",
   "queue-check",
   "drivers",
   "vehicles",
+  "shop-profile",
+  "seller-profile",
+  "acknowledgements",
 ];
 
 const operationsPages: PageKey[] = [
-  "overview",
   "plans",
   "operations",
   "queue-check",
 ];
 
-const securityPages: PageKey[] = ["overview", "security", "queue-check"];
+const securityPages: PageKey[] = ["security", "queue-check"];
 const driverPages: PageKey[] = [
   "driver-pass",
   "driver-checkin",

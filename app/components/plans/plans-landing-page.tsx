@@ -39,7 +39,7 @@ export function PlansLandingPage({
 }: {
   role: UserRole;
   demand: DailyDemand;
-  onSaveDemand: (date: string, byPlant: Record<string, DemandKgByGrade>) => void;
+  onSaveDemand: (date: string, byGrade: DemandKgByGrade) => void;
   slotPlan: SlotPlanProps;
 }) {
   const canSetDemand = role === "admin";
@@ -80,6 +80,7 @@ export function PlansLandingPage({
       getPlantPlans(slotPlan.plans, plant.id).map((plan) => plan.grade),
     ]),
   );
+  const allGrades = [...new Set(Object.values(gradesByPlant).flat())];
 
   return (
     <div className="space-y-5">
@@ -110,13 +111,12 @@ export function PlansLandingPage({
           key={selectedDate}
           date={selectedDate}
           dateLabel={formatDate(selectedDate)}
-          plants={plants}
-          gradesByPlant={gradesByPlant}
+          grades={allGrades}
           demand={demand}
           readOnly={isLocked(selectedDate)}
           onClose={() => setSelectedDate(null)}
-          onSave={(byPlant) => {
-            onSaveDemand(selectedDate, byPlant);
+          onSave={(byGrade) => {
+            onSaveDemand(selectedDate, byGrade);
             setSelectedDate(null);
           }}
         />

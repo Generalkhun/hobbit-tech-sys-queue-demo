@@ -61,6 +61,7 @@ export function BookingPage(props: BookingPageProps) {
             heavyWeight={wizard.heavyWeight}
             lightWeight={wizard.lightWeight}
             hasValidWeights={wizard.hasValidWeights}
+            unavailableSlots={wizard.unavailableSlots}
             shopHasAcknowledged={wizard.shopHasAcknowledged}
             privacyAccepted={wizard.privacyAccepted}
             dataUseAccepted={wizard.dataUseAccepted}

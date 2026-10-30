@@ -12,6 +12,10 @@ import {
   getServerPolicyAcknowledgements,
   subscribeToPolicyAcknowledgements,
 } from "@/app/data/policy-store";
+import {
+  getUnreadAcknowledgements,
+  subscribeToPolicyDocuments,
+} from "@/app/data/policy-documents";
 import { useCapacityConfig } from "@/app/hooks/use-capacity-config";
 import { useDeliveryDrafts } from "@/app/hooks/use-delivery-drafts";
 import { useDailyDemand } from "@/app/hooks/use-daily-demand";
@@ -35,6 +39,12 @@ export function DemoApp() {
     getPolicyStorageError,
     () => "",
   );
+  const _docSub = useSyncExternalStore(
+    subscribeToPolicyDocuments,
+    () => 1,
+    () => 0,
+  );
+  void _docSub;
 
   const registry = useDriverRegistry(user?.name ?? "—");
   const vehicleRegistry = useVehicleRegistry(user?.name ?? "—");
@@ -76,6 +86,17 @@ export function DemoApp() {
     );
   }
 
+  const shop = sellerDirectory.shops.find((s) => s.name === user.organization);
+  const seller = sellerDirectory.sellers.find((s) => s.name === user.organization);
+  const unreadAckCount =
+    user.role === "admin"
+      ? 0
+      : shop
+        ? getUnreadAcknowledgements("shop", shop.id).length
+        : seller
+          ? getUnreadAcknowledgements("seller", seller.id).length
+          : 0;
+
   return (
     <AppShell
       user={user}
@@ -87,6 +108,7 @@ export function DemoApp() {
         deliveryDrafts.closeForm();
         driverCheckin.reset();
       }}
+      unreadAckCount={unreadAckCount}
     >
       {policyStorageError && (
         <p

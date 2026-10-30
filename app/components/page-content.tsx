@@ -1,18 +1,23 @@
 "use client";
 
+import { AcknowledgementsPage } from "@/app/components/acknowledgements-page";
 import { BookingPage } from "@/app/components/booking-page";
 import { CallingPage } from "@/app/components/calling-page";
 import { DeliveryNotesPage } from "@/app/components/delivery-notes-page";
 import { DirectoryPage } from "@/app/components/directory-page";
 import { DriverPortalPage } from "@/app/components/driver-portal-page";
+import { FastlaneRulesPage } from "@/app/components/fastlane-rules-page";
 import { OverviewPage } from "@/app/components/overview-page";
 import { PlansLandingPage } from "@/app/components/plans/plans-landing-page";
+import { PolicyDocumentsPage } from "@/app/components/policy-documents-page";
 import { QueueCheckPage } from "@/app/components/queue-check-page";
 import { DriversPage } from "@/app/components/registry/drivers-page";
 import { VehiclesPage } from "@/app/components/registry/vehicles-page";
 import { SecurityPage } from "@/app/components/security-page";
 import { SellersPage } from "@/app/components/sellers-page";
 import { SettingsPage } from "@/app/components/settings-page";
+import { SellerProfilePage } from "@/app/components/seller-profile-page";
+import { ShopProfilePage } from "@/app/components/shop-profile-page";
 import { ShopsPage } from "@/app/components/shops-page";
 import { Panel } from "@/app/components/ui";
 import { directoryDefinitions, isDirectoryPage } from "@/app/data/directories";
@@ -108,6 +113,7 @@ export function PageContent(props: PageContentProps) {
           canManagePlans={canManagePlans(user)}
           queuePage={shortcut.page}
           queueActionLabel={shortcut.label}
+          isAdmin={isAdmin}
         />
       );
     }
@@ -129,6 +135,7 @@ export function PageContent(props: PageContentProps) {
             onHourlyDefaultChange: capacity.changeHourlyDefault,
             onSlotCapacitiesChange: capacity.changeSlotCapacities,
             onSlotCapacitiesReset: capacity.resetSlotCapacity,
+            onReopenChange: capacity.changeReopenOverride,
           }}
         />
       );
@@ -143,6 +150,7 @@ export function PageContent(props: PageContentProps) {
             plans={queue.plans}
             bookings={queue.bookings}
             resolveCapacity={queue.resolveCapacity}
+            isRushHourReopened={queue.isRushHourReopened}
             acknowledgements={acknowledgements}
             onCreate={queue.createBooking}
             onGoToRegistry={() => onNavigate("drivers")}
@@ -220,6 +228,7 @@ export function PageContent(props: PageContentProps) {
           onRelease={(id, value) => sellerDirectory.setSellerSuspended(id, false, value)}
           onMoveShop={sellerDirectory.moveShop}
           onUpdateProfile={sellerDirectory.updateSellerProfile}
+          onUpdateRPStatus={sellerDirectory.updateSellerRPStatus}
         />
       );
     case "shops":
@@ -232,8 +241,79 @@ export function PageContent(props: PageContentProps) {
           onAddShop={sellerDirectory.addShop}
           onMoveShop={sellerDirectory.moveShop}
           onUpdateProfile={sellerDirectory.updateShopProfile}
+          onUpdateRPStatus={sellerDirectory.updateShopRPStatus}
         />
       );
+    case "fastlane-rules":
+      return <FastlaneRulesPage userName={user.name} />;
+    case "policy-documents":
+      return <PolicyDocumentsPage userName={user.name} />;
+    case "shop-profile": {
+      const shop = sellerDirectory.shops.find((s) => s.name === user.organization);
+      if (!shop) {
+        return (
+          <Panel className="p-6 text-sm text-slate-500">
+            ไม่พบข้อมูลร้านค้าที่เชื่อมโยงกับบัญชีนี้
+          </Panel>
+        );
+      }
+      return (
+        <ShopProfilePage
+          shop={shop}
+          onUpdateProfile={sellerDirectory.updateShopProfile}
+        />
+      );
+    }
+    case "seller-profile": {
+      const seller = sellerDirectory.sellers.find((s) => s.name === user.organization);
+      if (!seller) {
+        return (
+          <Panel className="p-6 text-sm text-slate-500">
+            ไม่พบข้อมูลผู้ขายที่เชื่อมโยงกับบัญชีนี้
+          </Panel>
+        );
+      }
+      return (
+        <SellerProfilePage
+          seller={seller}
+          onUpdateProfile={sellerDirectory.updateSellerProfile}
+        />
+      );
+    }
+    case "acknowledgements": {
+      if (user.role === "admin") {
+        return <PolicyDocumentsPage userName={user.name} />;
+      }
+      const shop = sellerDirectory.shops.find((s) => s.name === user.organization);
+      const seller = sellerDirectory.sellers.find((s) => s.name === user.organization);
+      if (shop) {
+        return (
+          <AcknowledgementsPage
+            targetType="shop"
+            targetId={shop.id}
+            targetName={shop.name}
+            userId={user.id}
+            isAdmin={false}
+          />
+        );
+      }
+      if (seller) {
+        return (
+          <AcknowledgementsPage
+            targetType="seller"
+            targetId={seller.id}
+            targetName={seller.name}
+            userId={user.id}
+            isAdmin={false}
+          />
+        );
+      }
+      return (
+        <Panel className="p-6 text-sm text-slate-500">
+          ไม่พบข้อมูลร้านค้าหรือผู้ขายที่เชื่อมโยงกับบัญชีนี้
+        </Panel>
+      );
+    }
     default:
       if (isDirectoryPage(page)) {
         return (

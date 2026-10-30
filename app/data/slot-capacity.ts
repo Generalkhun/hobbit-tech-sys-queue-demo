@@ -12,6 +12,8 @@ export interface SlotCapacityConfig {
   hourlyDefaults: Record<string, number>;
   slotOverrides: Record<string, Record<string, number>>;
   closures: Record<string, string>;
+  /** slot ที่ถูกปิดช่วง rush hour แล้ว admin เปิดรับกลับ (key: date|plantId|slot) */
+  reopenOverrides: Record<string, true>;
 }
 
 export type GradeCapacities = Record<string, number>;
@@ -27,6 +29,7 @@ export const emptyCapacityConfig: SlotCapacityConfig = {
   hourlyDefaults: {},
   slotOverrides: {},
   closures: {},
+  reopenOverrides: {},
 };
 
 const defaultKey = (date: string, plantId: string) => `${date}|${plantId}`;
@@ -71,6 +74,15 @@ export function isSlotClosed(plantId: string, slot: string) {
   return overlapsRushHour(plantId, slot);
 }
 
+function isReopened(
+  config: SlotCapacityConfig,
+  date: string,
+  plantId: string,
+  slot: string,
+) {
+  return config.reopenOverrides[slotKey(date, plantId, slot)] === true;
+}
+
 export function getSlotCapacities(
   config: SlotCapacityConfig,
   plans: PlanRow[],
@@ -79,8 +91,14 @@ export function getSlotCapacities(
   slot: string,
   options: { ignoreClosure?: boolean } = {},
 ): GradeCapacities {
-  if (isSlotClosed(plantId, slot)) return {};
-  if (!options.ignoreClosure && getSlotClosure(config, date, plantId, slot)) {
+  const rushHourBlocked =
+    isSlotClosed(plantId, slot) && !isReopened(config, date, plantId, slot);
+  const manuallyClosed =
+    getSlotClosure(config, date, plantId, slot) !== undefined;
+  if (
+    !options.ignoreClosure &&
+    (rushHourBlocked || manuallyClosed)
+  ) {
     return {};
   }
   const grades = getOpenGrades(plans, plantId, slot);
@@ -116,6 +134,22 @@ export function setSlotClosure(
   return {
     ...config,
     closures: reason === null ? rest : { ...rest, [key]: reason.trim() },
+  };
+}
+
+export function setReopenOverride(
+  config: SlotCapacityConfig,
+  date: string,
+  plantId: string,
+  slot: string,
+  reopen: boolean,
+): SlotCapacityConfig {
+  const key = slotKey(date, plantId, slot);
+  const { [key]: removed, ...rest } = config.reopenOverrides;
+  void removed;
+  return {
+    ...config,
+    reopenOverrides: reopen ? { ...rest, [key]: true } : rest,
   };
 }
 
@@ -182,6 +216,20 @@ export function createCapacityResolver(
 ): CapacityResolver {
   return (plantId, date, timeSlot, grade) =>
     getSlotCapacities(config, plans, date, plantId, timeSlot)[grade] ?? 0;
+}
+
+export type RushHourOverrideResolver = (
+  plantId: string,
+  date: string,
+  slot: string,
+) => boolean;
+
+/** ตรวจว่า slot ที่เป็น rush hour ถูกเปิดรับกลับแล้วหรือไม่ (จาก config ที่บันทึก) */
+export function createRushHourOverrideResolver(
+  config: SlotCapacityConfig = emptyCapacityConfig,
+): RushHourOverrideResolver {
+  return (plantId, date, slot) =>
+    config.reopenOverrides[slotKey(date, plantId, slot)] === true;
 }
 
 export interface GradeDaySummary {
@@ -252,6 +300,10 @@ export function copyDateConfig(
       ...without(target.slotOverrides),
       ...pickDate(source.slotOverrides, date),
     },
+    reopenOverrides: {
+      ...without(target.reopenOverrides),
+      ...pickDate(source.reopenOverrides, date),
+    },
   };
 }
 
@@ -265,11 +317,13 @@ export function hasSameDateConfig(
       pickDate(left.hourlyDefaults, date),
       pickDate(left.slotOverrides, date),
       pickDate(left.closures, date),
+      pickDate(left.reopenOverrides, date),
     ]) ===
     JSON.stringify([
       pickDate(right.hourlyDefaults, date),
       pickDate(right.slotOverrides, date),
       pickDate(right.closures, date),
+      pickDate(right.reopenOverrides, date),
     ])
   );
 }

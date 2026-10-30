@@ -8,6 +8,7 @@ import { ManageButton } from "@/app/components/shared/manage-button";
 import { SearchInput } from "@/app/components/shared/search-input";
 import { SectionHeader } from "@/app/components/shared/section-header";
 import { SellerStatusBadge } from "@/app/components/shared/seller-status-badge";
+import { RPStatusBadge } from "@/app/components/shared/rp-status-badge";
 import { Button, Panel } from "@/app/components/ui";
 import type { Seller } from "@/app/types/seller";
 
@@ -65,6 +66,7 @@ export function SellerList({
               <th className="px-4 py-3.5">ชื่อ</th>
               <th className="px-4 py-3.5">ผู้ประสานงาน</th>
               <th className="px-4 py-3.5">เบอร์ติดต่อ</th>
+              <th className="px-4 py-3.5">สถานะ RP</th>
               <th className="px-4 py-3.5">สถานะ</th>
               <th className="px-6 py-3.5 text-right">จัดการ</th>
             </tr>
@@ -81,6 +83,9 @@ export function SellerList({
                 </td>
                 <td className="px-4 py-4 text-slate-500">{item.coordinator}</td>
                 <td className="px-4 py-4 text-slate-500">{item.phone}</td>
+                <td className="px-4 py-4">
+                  <RPStatusBadge status={item.rpStatus} />
+                </td>
                 <td className="px-4 py-4">
                   <SellerStatusBadge status={item.status} />
                 </td>

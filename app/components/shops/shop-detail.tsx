@@ -6,8 +6,12 @@ import { ShopMoveModal } from "@/app/components/shops/shop-move-modal";
 import { BackLink } from "@/app/components/shared/back-link";
 import { LocationEditor } from "@/app/components/shared/location-editor";
 import { HistoryPanel } from "@/app/components/shared/history-table";
+import { RPStatusBadge, RPStatusSelect } from "@/app/components/shared/rp-status-badge";
+import { CheckinHistoryPanel } from "@/app/components/shared/checkin-history-panel";
 import { Button, Panel } from "@/app/components/ui";
 import { buildShopMoveRows, getSellerName } from "@/app/data/sellers";
+import { getCheckinLogsByShop } from "@/app/data/checkin-log";
+import type { RPStatus } from "@/app/types/queue";
 import type {
   ProfilePatch,
   Seller,
@@ -24,6 +28,7 @@ export function ShopDetail({
   onBack,
   onMoveShop,
   onUpdateProfile,
+  onUpdateRPStatus,
 }: {
   shop: SellerShop;
   sellers: Seller[];
@@ -32,8 +37,12 @@ export function ShopDetail({
   onBack: () => void;
   onMoveShop: (input: ShopMoveInput) => void;
   onUpdateProfile: (shopId: string, profile: ProfilePatch) => void;
+  onUpdateRPStatus?: (shopId: string, rpStatus: RPStatus) => void;
 }) {
   const [showMove, setShowMove] = useState(false);
+  const [rpStatusDraft, setRpStatusDraft] = useState<RPStatus | undefined>(
+    shop.rpStatus,
+  );
 
   return (
     <div className="space-y-5">
@@ -64,6 +73,34 @@ export function ShopDetail({
         />
       </Panel>
 
+      {canManage && (
+        <Panel className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div>
+              <p className="text-xs text-slate-400">สถานะ RP</p>
+              <p className="mt-1">
+                <RPStatusBadge status={shop.rpStatus} />
+              </p>
+            </div>
+            <div className="min-w-40">
+              <RPStatusSelect
+                value={rpStatusDraft}
+                onChange={setRpStatusDraft}
+              />
+            </div>
+            {rpStatusDraft !== shop.rpStatus && onUpdateRPStatus && (
+              <Button
+                onClick={() => {
+                  onUpdateRPStatus(shop.id, rpStatusDraft ?? "normal");
+                }}
+              >
+                บันทึกสถานะ RP
+              </Button>
+            )}
+          </div>
+        </Panel>
+      )}
+
       <LocationEditor
         key={`${shop.id}-${shop.province}-${shop.address}-${shop.photo ?? ""}`}
         location={shop}
@@ -75,6 +112,12 @@ export function ShopDetail({
         title="ประวัติการย้ายผู้ขาย"
         emptyText="ยังไม่มีประวัติการย้ายผู้ขาย"
         rows={buildShopMoveRows(moves, shop.id, sellers)}
+      />
+
+      <CheckinHistoryPanel
+        title="ประวัติการเช็คอิน"
+        logs={getCheckinLogsByShop(shop.name)}
+        emptyText="ยังไม่มีประวัติการเช็คอิน"
       />
 
       {showMove && (

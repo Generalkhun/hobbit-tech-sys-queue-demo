@@ -25,7 +25,12 @@ export type PageKey =
   | "settings"
   | "driver-pass"
   | "driver-checkin"
-  | "driver-queue";
+  | "driver-queue"
+  | "fastlane-rules"
+  | "policy-documents"
+  | "shop-profile"
+  | "seller-profile"
+  | "acknowledgements";
 
 export type BookingStatus =
   | "confirmed"
@@ -113,6 +118,70 @@ export interface PolicyAcknowledgement {
   policyVersion: string;
   acknowledgedAt: string;
   acknowledgedBy: string;
+}
+
+/** สถานะ RP สำหรับผู้ขายและร้านค้า */
+export type RPStatus = "fastlane" | "normal" | "limited";
+
+/** กฎสำหรับการปรับ RP status */
+export interface FastlaneRule {
+  id: string;
+  /** จำนวนครั้งที่ต้องจองแล้วมาตามนัด */
+  consecutiveOnTimeThreshold: number;
+  /** จำนวนครั้งที่เบี้ยว (no-show) ที่จะถูกปรับเป็น limited */
+  noShowLimit: number;
+  /** จำนวนครั้งที่สายที่ยังยอมรับได้ */
+  lateTolerance: number;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+/** บันทึกการเช็คอินของรถ */
+export interface CheckinLog {
+  id: string;
+  bookingId: string;
+  shopName: string;
+  sellerName: string;
+  driverName: string;
+  plate: string;
+  scheduledDate: string;
+  scheduledTimeSlot: string;
+  checkinTime: string;
+  /** "on-time" | "late" | "no-show" */
+  status: "on-time" | "late" | "no-show";
+  lateMinutes: number;
+  recordedBy: string;
+  recordedAt: string;
+}
+
+/** เอกสารที่ต้องรับทราบ (นโยบาย, PDPA ฯลฯ) */
+export interface PolicyDocument {
+  id: string;
+  title: string;
+  description: string;
+  documentType: string;
+  version: string;
+  /** "shop" | "seller" | "all" */
+  targetAudience: "shop" | "seller" | "all";
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  active: boolean;
+}
+
+/** สถานะการรับทราบเอกสารของผู้ใช้ */
+export interface DocumentAcknowledgement {
+  id: string;
+  documentId: string;
+  targetType: "shop" | "seller";
+  targetId: string;
+  targetName: string;
+  /** "unread" | "read" | "acknowledged" */
+  status: "unread" | "read" | "acknowledged";
+  readAt?: string;
+  acknowledgedAt?: string;
+  acknowledgedBy?: string;
 }
 
 export type { DriverRecord } from "@/app/types/registry";

@@ -14,7 +14,10 @@ export function SlotCapacityModal({
   booked,
   customized,
   closureReason,
+  rushHourClosed,
+  rushHourReopened,
   onSave,
+  onReopenChange,
   onReset,
   onClose,
 }: {
@@ -25,7 +28,13 @@ export function SlotCapacityModal({
   booked: Record<string, number>;
   customized: boolean;
   closureReason?: string;
+  /** slot นี้เป็นช่วง rush hour ที่ถูกปิดถาวร */
+  rushHourClosed?: boolean;
+  /** เปิดรับ rush hour กลับแล้ว */
+  rushHourReopened?: boolean;
   onSave: (capacities: GradeCapacities, closureReason: string | null) => void;
+  /** เปิด/ปิดการรับรถช่วง rush hour */
+  onReopenChange?: (reopen: boolean) => void;
   onReset: () => void;
   onClose: () => void;
 }) {
@@ -38,6 +47,7 @@ export function SlotCapacityModal({
 
   const [closed, setClosed] = useState(closureReason !== undefined);
   const [reason, setReason] = useState(closureReason ?? "");
+  const [reopen, setReopen] = useState(Boolean(rushHourReopened));
   const bookedTotal = Object.values(booked).reduce((sum, count) => sum + count, 0);
   const closureInvalid = closed && reason.trim() === "";
 
@@ -50,6 +60,19 @@ export function SlotCapacityModal({
   });
   const allValid = closed || parsed.every((item) => item.valid);
   const total = parsed.reduce((sum, item) => sum + (item.valid ? item.value : 0), 0);
+
+  function handleSave() {
+    if (onReopenChange && rushHourClosed) onReopenChange(reopen);
+    onSave(
+      Object.fromEntries(
+        parsed.map((item) => [
+          item.grade,
+          item.valid ? item.value : initial[item.grade],
+        ]),
+      ),
+      closed ? reason.trim() : null,
+    );
+  }
 
   return (
     <Modal
@@ -75,17 +98,7 @@ export function SlotCapacityModal({
           </Button>
           <Button
             disabled={!allValid || closureInvalid}
-            onClick={() =>
-              onSave(
-                Object.fromEntries(
-                  parsed.map((item) => [
-                    item.grade,
-                    item.valid ? item.value : initial[item.grade],
-                  ]),
-                ),
-                closed ? reason.trim() : null,
-              )
-            }
+            onClick={handleSave}
           >
             บันทึก
           </Button>
@@ -93,6 +106,24 @@ export function SlotCapacityModal({
       }
     >
       <div className="space-y-3">
+        {rushHourClosed && (
+          <div className="rounded-xl border border-sys-100 bg-sys-50/50 p-4">
+            <label className="flex items-center gap-3 text-sm font-semibold text-sys-800">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-sys-600"
+                checked={reopen}
+                onChange={(event) => setReopen(event.target.checked)}
+              />
+              เปิดรับรถช่วง Rush Hour นี้
+            </label>
+            {!reopen && (
+              <p className="mt-2 text-[11px] text-slate-500">
+                ช่วงนี้เป็น rush hour ที่ปิดรับถาวร ยกเลิกช่องนี้เพื่อกลับไปปิดรับ
+              </p>
+            )}
+          </div>
+        )}
         <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4">
           <label className="flex items-center gap-3 text-sm font-semibold text-rose-700">
             <input
@@ -100,6 +131,7 @@ export function SlotCapacityModal({
               className="h-4 w-4 accent-rose-600"
               checked={closed}
               onChange={(event) => setClosed(event.target.checked)}
+              disabled={rushHourClosed && !reopen}
             />
             ปิดรับช่วงเวลานี้
           </label>
@@ -111,8 +143,9 @@ export function SlotCapacityModal({
                 placeholder="เหตุผล เช่น ซ่อมบำรุงเครื่องชั่ง"
                 value={reason}
                 onChange={(event) => setReason(event.target.value)}
+                disabled={rushHourClosed && !reopen}
               />
-              {reason.trim() === "" && (
+              {reason.trim() === "" && !(rushHourClosed && !reopen) && (
                 <p role="alert" className="mt-1 text-[11px] text-rose-600">
                   กรุณาระบุเหตุผลที่ปิดรับ
                 </p>

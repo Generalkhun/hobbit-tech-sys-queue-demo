@@ -1,7 +1,9 @@
 import type { PlanRow, QueueBooking } from "@/app/types/queue";
 import {
   createCapacityResolver,
+  createRushHourOverrideResolver,
   type CapacityResolver,
+  type RushHourOverrideResolver,
 } from "./slot-capacity.ts";
 import { isSlotInsideWindow, overlapsRushHour } from "./slot-time.ts";
 
@@ -53,13 +55,15 @@ export function getPlantScheduleOptions(
   bookings: QueueBooking[],
   excludeBookingId?: string,
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
+  isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
 ): PlantScheduleOption[] {
   return plans
     .filter(
       (plan) =>
         plan.grade === request.grade &&
         isSlotInsideWindow(request.timeSlot, plan.window) &&
-        !overlapsRushHour(plan.plantId, request.timeSlot),
+        (!overlapsRushHour(plan.plantId, request.timeSlot) ||
+          isRushHourReopened(plan.plantId, request.date, request.timeSlot)),
     )
     .map((plan) => {
       const bookedVehicles = countVehiclesAtSlot(
@@ -94,6 +98,7 @@ export function schedulePlant(
   plans: PlanRow[],
   bookings: QueueBooking[],
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
+  isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
 ): ScheduleResult {
   if (!Number.isFinite(request.estimatedTons) || request.estimatedTons <= 0) {
     return {
@@ -108,6 +113,7 @@ export function schedulePlant(
     bookings,
     undefined,
     resolveCapacity,
+    isRushHourReopened,
   );
   const available = options.filter((option) => option.remainingVehicles > 0);
 
@@ -119,7 +125,8 @@ export function schedulePlant(
           (plan) =>
             plan.grade === request.grade &&
             isSlotInsideWindow(request.timeSlot, plan.window) &&
-            overlapsRushHour(plan.plantId, request.timeSlot),
+            overlapsRushHour(plan.plantId, request.timeSlot) &&
+            !isRushHourReopened(plan.plantId, request.date, request.timeSlot),
         )
         .map((plan) => plan.plantId);
       return {
@@ -173,6 +180,7 @@ export function canMoveBookingToPlant(
   plans: PlanRow[],
   bookings: QueueBooking[],
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
+  isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
 ): ScheduleResult {
   if (booking.plantId === targetPlantId) {
     return {
@@ -189,6 +197,7 @@ export function canMoveBookingToPlant(
         bookings,
         booking.id,
         resolveCapacity,
+        isRushHourReopened,
       ),
     };
   }
@@ -204,6 +213,7 @@ export function canMoveBookingToPlant(
     bookings,
     booking.id,
     resolveCapacity,
+    isRushHourReopened,
   );
   const target = options.find((option) => option.plantId === targetPlantId);
 

@@ -3,12 +3,14 @@
 import { Avatar } from "@/app/components/avatar";
 import { DocumentGallery, InfoGrid } from "@/app/components/registry/info-grid";
 import { RegistryDetailShell } from "@/app/components/registry/registry-detail-shell";
+import { CheckinHistoryPanel } from "@/app/components/shared/checkin-history-panel";
 import { Panel } from "@/app/components/ui";
 import {
   buildStatusRows,
   employmentLabels,
   maskNationalId,
 } from "@/app/data/registry";
+import { getCheckinLogsByDriver } from "@/app/data/checkin-log";
 import type { NoteWithAttachments } from "@/app/types/common";
 import type {
   DriverRecord,
@@ -69,6 +71,11 @@ export function DriverDetail({
             ]}
           />
         </Panel>
+        <CheckinHistoryPanel
+          title="ประวัติการเช็คอิน"
+          logs={getCheckinLogsByDriver(driver.name)}
+          emptyText="ยังไม่มีประวัติการเช็คอิน"
+        />
       </div>
     </RegistryDetailShell>
   );

@@ -8,6 +8,7 @@ import type {
   QueueBooking,
 } from "@/app/types/queue";
 import type { CapacityResolver } from "@/app/data/slot-capacity";
+import type { RushHourOverrideResolver } from "@/app/data/slot-capacity";
 
 export type NewBooking = Omit<
   QueueBooking,
@@ -47,6 +48,7 @@ export interface BookingPageProps {
   plans: PlanRow[];
   bookings: QueueBooking[];
   resolveCapacity: CapacityResolver;
+  isRushHourReopened: RushHourOverrideResolver;
   acknowledgements: PolicyAcknowledgement[];
   onCreate: (booking: NewBooking) => BookingCreationResult;
   onGoToRegistry: () => void;

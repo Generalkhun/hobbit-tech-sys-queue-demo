@@ -3,6 +3,7 @@ import type {
   NoteAttachment,
   NoteWithAttachments,
 } from "@/app/types/common";
+import type { RPStatus } from "@/app/types/queue";
 
 export type SellerStatus = "active" | "suspended";
 
@@ -29,6 +30,7 @@ export interface Seller extends SellerProfile, SellerLocation {
   email: string;
   taxId: string;
   status: SellerStatus;
+  rpStatus?: RPStatus;
 }
 
 export interface NewSellerInput extends SellerProfile, SellerLocation {
@@ -52,6 +54,7 @@ export interface SellerShop extends SellerProfile, SellerLocation {
   name: string;
   /** null = ร้านค้าที่ไม่มีผู้ขาย */
   sellerId: string | null;
+  rpStatus?: RPStatus;
 }
 
 /** บันทึกการย้ายร้านค้า 1 ครั้ง (null = ไม่มีผู้ขาย) */

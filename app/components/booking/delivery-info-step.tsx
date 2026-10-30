@@ -22,6 +22,7 @@ interface DeliveryInfoStepProps {
   heavyWeight: number;
   lightWeight: number;
   hasValidWeights: boolean;
+  unavailableSlots?: string[];
   shopHasAcknowledged: boolean;
   privacyAccepted: boolean;
   dataUseAccepted: boolean;
@@ -39,6 +40,7 @@ export function DeliveryInfoStep({
   heavyWeight,
   lightWeight,
   hasValidWeights,
+  unavailableSlots = [],
   shopHasAcknowledged,
   privacyAccepted,
   dataUseAccepted,
@@ -125,9 +127,21 @@ export function DeliveryInfoStep({
               required
             >
               {bookableSlots.map((slot) => (
-                <option key={slot}>{slot}</option>
+                <option
+                  key={slot}
+                  disabled={unavailableSlots.includes(slot)}
+                  className={unavailableSlots.includes(slot) ? "text-slate-400" : ""}
+                >
+                  {slot}
+                  {unavailableSlots.includes(slot) ? " (ไม่ว่าง)" : ""}
+                </option>
               ))}
             </select>
+            {unavailableSlots.includes(form.timeSlot) && (
+              <p className="mt-1.5 rounded-lg bg-rose-50 px-3 py-1.5 text-[11px] text-rose-700">
+                ช่วงเวลานี้ปิดรับหรือเป็นช่วง rush hour ที่ยังไม่ได้เปิดรับ กรุณาเลือกช่วงอื่น
+              </p>
+            )}
           </FieldLabel>
           <WeightInput
             label="น้ำหนักชั่งหนัก (กิโลกรัม)"
