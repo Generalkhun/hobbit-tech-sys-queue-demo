@@ -126,6 +126,7 @@ export function PageContent(props: PageContentProps) {
           bookings={queue.bookings}
           plans={queue.plans}
           receipts={queue.receipts}
+          checkinTimes={queue.checkinTimes}
           onReceiptChange={queue.updateReceipt}
           onNavigate={onNavigate}
           canManagePlans={canManagePlans(user)}

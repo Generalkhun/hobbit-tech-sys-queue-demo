@@ -16,7 +16,7 @@ export function OverviewFilters({
       <div>
         <h2 className="text-lg font-bold text-sys-900">Monitor Dashboard</h2>
         <p className="mt-1 text-xs text-slate-500">
-          เปรียบเทียบยอดจองกับยอดรับจริง และติดตามใบที่ไม่มาตามนัด/มาผิดวัน
+          สรุปยอดจองและผลการมาส่งจริงของแต่ละวัน
         </p>
       </div>
       <div className="flex flex-wrap gap-2">

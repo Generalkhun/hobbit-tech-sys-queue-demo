@@ -50,30 +50,19 @@ export function computeOverviewMetrics(
   date: string,
   plantFilter: string,
 ): OverviewMetrics {
-  const receivedKgOf = (booking: QueueBooking): number =>
-    receipts[booking.id]?.receivedKg ?? 0;
+  // ระบบไม่รู้ "ยอดรับจริง" — ใช้สถานะใบนำส่งที่เกิดขึ้นจริงแทน
+  // (ผ่านป้อมแล้ว = ส่งแล้ว, ยกเลิก = ยกเลิก, ยังไม่ผ่านป้อม = ยังไม่มาส่ง)
   const visibleBookings = bookings
-    .filter(
-      (booking) =>
-        booking.date === date || receipts[booking.id]?.receivedDate === date,
-    )
+    .filter((booking) => booking.date === date)
     .filter((booking) => plantFilter === "all" || booking.plantId === plantFilter);
-  const scheduledBookings = visibleBookings.filter((booking) => booking.date === date);
+  const scheduledBookings = visibleBookings;
   const receivedOnDate = visibleBookings.filter(
-    (booking) =>
-      receipts[booking.id]?.state === "received" &&
-      receipts[booking.id]?.receivedDate === date &&
-      booking.date === date,
+    (booking) => booking.status === "completed",
   );
-  const noShowBookings = scheduledBookings.filter(
-    (booking) => receipts[booking.id]?.state === "no-show",
+  const noShowBookings = visibleBookings.filter(
+    (booking) => booking.status === "cancelled",
   );
-  const lateBookings = visibleBookings.filter(
-    (booking) =>
-      booking.date !== date &&
-      receipts[booking.id]?.state === "received" &&
-      receipts[booking.id]?.receivedDate === date,
-  );
+  const lateBookings: QueueBooking[] = [];
 
   const plantSummary = plants
     .filter((plant) => plantFilter === "all" || plant.id === plantFilter)
@@ -82,9 +71,9 @@ export function computeOverviewMetrics(
       return {
         ...plant,
         bookedKg: sum(scheduledBookings.filter(inPlant), bookedKgOf),
-        receivedKg: sum(receivedOnDate.filter(inPlant), receivedKgOf),
+        receivedKg: sum(receivedOnDate.filter(inPlant), bookedKgOf),
         noShowKg: sum(noShowBookings.filter(inPlant), bookedKgOf),
-        lateKg: sum(lateBookings.filter(inPlant), receivedKgOf),
+        lateKg: 0,
       };
     });
 
@@ -95,9 +84,9 @@ export function computeOverviewMetrics(
     noShowBookings,
     lateBookings,
     bookedKg: sum(scheduledBookings, bookedKgOf),
-    receivedKg: sum(receivedOnDate, receivedKgOf),
+    receivedKg: sum(receivedOnDate, bookedKgOf),
     noShowKg: sum(noShowBookings, bookedKgOf),
-    lateKg: sum(lateBookings, receivedKgOf),
+    lateKg: 0,
     plantSummary,
   };
 }

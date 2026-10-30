@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { demoDate, plants } from "@/app/data/mock-data";
+import { addDays } from "@/app/data/plan-calendar";
 import {
   computeBreakdownRows,
   computeOverviewMetrics,
@@ -21,6 +22,7 @@ import { formatKg } from "@/app/data/overview";
 import type { BreakdownBy } from "@/app/types/overview";
 import type {
   BookingReceipt,
+  CheckinTimes,
   PageKey,
   PlanRow,
   QueueBooking,
@@ -30,6 +32,7 @@ export function OverviewPage({
   bookings,
   plans,
   receipts,
+  checkinTimes,
   onReceiptChange,
   onNavigate,
   canManagePlans,
@@ -40,6 +43,7 @@ export function OverviewPage({
   bookings: QueueBooking[];
   plans: PlanRow[];
   receipts: Record<string, BookingReceipt>;
+  checkinTimes: CheckinTimes;
   onReceiptChange: (bookingId: string, receipt: BookingReceipt) => void;
   onNavigate: (page: PageKey) => void;
   canManagePlans: boolean;
@@ -47,7 +51,8 @@ export function OverviewPage({
   queueActionLabel: string;
   isAdmin?: boolean;
 }) {
-  const [date, setDate] = useState(demoDate);
+  // แดชบอร์ดสรุปของ "เมื่อวาน" เป็นค่าเริ่มต้น
+  const [date, setDate] = useState(() => addDays(demoDate, -1));
   const [plantFilter, setPlantFilter] = useState("all");
   const [breakdownBy, setBreakdownBy] = useState<BreakdownBy>("grade");
 
@@ -150,10 +155,9 @@ export function OverviewPage({
       />
       <ReceiptTable
         bookings={metrics.visibleBookings}
-        receipts={receipts}
+        checkinTimes={checkinTimes}
         date={date}
         queueActionLabel={queueActionLabel}
-        onReceiptChange={onReceiptChange}
         onOpenQueue={() => onNavigate(queuePage)}
       />
     </div>

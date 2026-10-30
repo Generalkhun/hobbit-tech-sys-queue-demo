@@ -22,25 +22,31 @@ export function OverviewStatCards({ metrics }: { metrics: OverviewMetrics }) {
       description: `${metrics.scheduledBookings.length} ใบ · ตามวันที่จอง`,
     },
     {
-      label: "เข้าจริงตรงวันจอง",
+      label: "มาส่งแล้ว",
       value: formatKg(metrics.receivedKg),
       icon: "circle-check",
       color: "bg-emerald-50 text-emerald-700",
-      description: `${metrics.receivedOnDate.length} ใบ · บันทึกยอดรับจริง`,
+      description: `${metrics.receivedOnDate.length} ใบ · ผ่านป้อมแล้ว`,
     },
     {
-      label: "จองแล้วไม่มา",
+      label: "ยกเลิก",
       value: formatKg(metrics.noShowKg),
+      icon: "close",
+      color: "bg-rose-50 text-rose-700",
+      description: `${metrics.noShowBookings.length} ใบ · ยกเลิกการจอง`,
+    },
+    {
+      label: "ยังไม่มาส่ง",
+      value: formatKg(
+        Math.max(0, metrics.bookedKg - metrics.receivedKg - metrics.noShowKg),
+      ),
       icon: "clock",
       color: "bg-amber-50 text-amber-700",
-      description: `${metrics.noShowBookings.length} ใบ · ระบุโดยผู้ใช้งาน`,
-    },
-    {
-      label: "มาไม่ตรงวันที่จอง",
-      value: formatKg(metrics.lateKg),
-      icon: "refresh",
-      color: "bg-violet-50 text-violet-700",
-      description: `${metrics.lateBookings.length} ใบ · มาถึงวันที่เลือก`,
+      description: `${
+        metrics.scheduledBookings.length -
+        metrics.receivedOnDate.length -
+        metrics.noShowBookings.length
+      } ใบ · ยังไม่ผ่านป้อม`,
     },
   ];
 

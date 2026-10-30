@@ -41,7 +41,8 @@ export type BookingStatus =
   | "call-requested"
   | "called"
   | "no-answer"
-  | "completed";
+  | "completed"
+  | "cancelled";
 
 /** จำนวนครั้งที่โทรแล้วไม่รับ — เก็บต่อ booking (key: bookingId) */
 export type NoAnswerCounts = Record<string, number>;

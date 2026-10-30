@@ -5,9 +5,9 @@ export function PlantSummaryTable({ metrics }: { metrics: OverviewMetrics }) {
   return (
     <Panel className="overflow-hidden">
       <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-        <h3 className="font-bold text-sys-900">ปริมาณจองเทียบกับยอดรับจริง</h3>
+        <h3 className="font-bold text-sys-900">ปริมาณจองเทียบกับผลการมาส่ง</h3>
         <p className="mt-1 text-xs text-slate-400">
-          แยกตามโรงงาน · วันที่รับจริงที่ต่างจากวันที่จองจะนับเป็นมาผิดวัน
+          แยกตามโรงงาน · นับจากสถานะใบนำส่งที่เกิดขึ้นจริง
         </p>
       </div>
       <div className="scrollbar-thin overflow-x-auto">
@@ -16,9 +16,9 @@ export function PlantSummaryTable({ metrics }: { metrics: OverviewMetrics }) {
             <tr>
               <th className="px-6 py-3.5">โรงงาน</th>
               <th className="px-4 py-3.5">จองในวันนี้</th>
-              <th className="px-4 py-3.5">เข้าจริงตรงวัน</th>
-              <th className="px-4 py-3.5">จองแล้วไม่มา</th>
-              <th className="px-6 py-3.5">มาผิดวันในวันนี้</th>
+              <th className="px-4 py-3.5">มาส่งแล้ว</th>
+              <th className="px-4 py-3.5">ยกเลิก</th>
+              <th className="px-6 py-3.5">ยังไม่มาส่ง</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

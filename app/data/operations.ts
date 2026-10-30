@@ -71,6 +71,10 @@ export const operationStatusStyle: Record<
     label: "7. ผ่าน รปภ. แล้ว",
     className: "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200",
   },
+  cancelled: {
+    label: "ยกเลิก",
+    className: "bg-slate-200 text-slate-600 ring-1 ring-inset ring-slate-300",
+  },
 };
 
 /** สถานะที่ยังอยู่ใน pipeline (ยังไม่จบ) */

@@ -23,7 +23,7 @@ export function BreakdownTable({
         <div>
           <h3 className="font-bold text-sys-900">รายละเอียดตามมิติ</h3>
           <p className="mt-1 text-xs text-slate-400">
-            ปริมาณจอง, รับจริง, ไม่มาตามนัด และมาผิดวัน
+            ปริมาณจอง, มาส่งแล้ว, ยกเลิก และยังไม่มาส่ง
           </p>
         </div>
         <div className="flex rounded-xl bg-slate-100 p-1">
@@ -49,9 +49,9 @@ export function BreakdownTable({
             <tr>
               <th className="px-6 py-3">รายการ</th>
               <th className="px-4 py-3">จอง</th>
-              <th className="px-4 py-3">รับจริงตรงวัน</th>
-              <th className="px-4 py-3">ไม่มา</th>
-              <th className="px-6 py-3">มาผิดวัน</th>
+              <th className="px-4 py-3">มาส่งแล้ว</th>
+              <th className="px-4 py-3">ยกเลิก</th>
+              <th className="px-6 py-3">ยังไม่มาส่ง</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

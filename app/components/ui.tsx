@@ -80,6 +80,10 @@ const statusContent: Record<
     label: "7. ผ่าน รปภ. แล้ว",
     className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
   },
+  cancelled: {
+    label: "ยกเลิก",
+    className: "bg-slate-100 text-slate-600 ring-slate-200",
+  },
 };
 
 export function StatusBadge({ status }: { status: BookingStatus }) {
