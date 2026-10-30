@@ -7,7 +7,7 @@ import { PlansFilterBar } from "@/app/components/plans-filter-bar";
 import { SlotCapacityModal } from "@/app/components/slot-capacity-modal";
 import { SlotCalendar } from "@/app/components/slot-calendar";
 import type { SavedPlanDay, SlotView } from "@/app/types/plans";
-import { demoDate, plants } from "@/app/data/mock-data";
+import { plants } from "@/app/data/mock-data";
 import {
   getHourlyDefault,
   getPlantPlans,
@@ -24,6 +24,9 @@ import { formatSlot, slotHours } from "@/app/data/slot-time";
 import type { PlanRow, QueueBooking } from "@/app/types/queue";
 
 export function PlansPage({
+  date,
+  onDateChange,
+  readOnly,
   plans,
   bookings,
   capacityConfig,
@@ -36,6 +39,10 @@ export function PlansPage({
   onSlotCapacitiesChange,
   onSlotCapacitiesReset,
 }: {
+  date: string;
+  onDateChange: (date: string) => void;
+  /** วันที่แก้ไขไม่ได้ (ในอดีตหรือไม่เกิน 7 วันข้างหน้า) */
+  readOnly: boolean;
   plans: PlanRow[];
   bookings: QueueBooking[];
   capacityConfig: SlotCapacityConfig;
@@ -54,7 +61,6 @@ export function PlansPage({
   ) => void;
   onSlotCapacitiesReset: (date: string, plantId: string, slot: string) => void;
 }) {
-  const [date, setDate] = useState(demoDate);
   const [plantId, setPlantId] = useState(plants[0].id);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
 
@@ -90,7 +96,7 @@ export function PlansPage({
     };
   });
   const savedDay = savedDays[date];
-  const locked = savedDay?.locked ?? false;
+  const locked = readOnly || (savedDay?.locked ?? false);
   const dirty = !hasSameDateConfig(capacityConfig, savedConfig, date);
   const status: PlanSaveStatus = dirty
     ? "dirty"
@@ -104,10 +110,9 @@ export function PlansPage({
       <PlansFilterBar
         date={date}
         onDateChange={(value) => {
-          setDate(value);
+          onDateChange(value);
           setEditingSlot(null);
         }}
-        minDate={demoDate}
         plants={plants}
         plantId={plantId}
         onPlantChange={(value) => {
@@ -120,6 +125,11 @@ export function PlansPage({
           onHourlyDefaultChange(date, plantId, value)
         }
       />
+      {readOnly ? (
+        <p role="status" className="rounded-2xl bg-slate-100 px-5 py-3 text-sm text-slate-500">
+          วันนี้ถึงอีก 7 วันข้างหน้าและวันในอดีตแก้ไขแผนไม่ได้ ดูได้อย่างเดียว
+        </p>
+      ) : (
       <PlanSaveBar
         status={status}
         locked={locked}
@@ -139,6 +149,7 @@ export function PlansPage({
           onDiscardDay(date);
         }}
       />
+      )}
       <SlotCalendar
         views={views}
         grades={grades}

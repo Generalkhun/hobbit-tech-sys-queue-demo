@@ -52,7 +52,7 @@ export const pageDetails: Record<PageKey, { title: string; subtitle: string }> =
   },
   plans: {
     title: "แผนรับเหล็ก",
-    subtitle: "กำหนดปริมาณรับแยกตามโรงงาน เกรด และช่วงเวลา",
+    subtitle: "กำหนดปริมาณที่ต้องการรับและปริมาณรถที่เข้ามาส่งได้ในแต่ละวัน",
   },
   booking: {
     title: "ใบนำส่งเศษเหล็ก",

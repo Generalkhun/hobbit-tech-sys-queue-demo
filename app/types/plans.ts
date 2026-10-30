@@ -13,3 +13,9 @@ export interface SlotView {
   booked: Record<string, number>;
   customized: boolean;
 }
+
+/** ปริมาณเหล็กที่ต้องการรับ (กก.) แยกตามเกรด */
+export type DemandKgByGrade = Record<string, number>;
+
+/** วันที่ (YYYY-MM-DD) → โรงงาน → เกรด → กก. */
+export type DailyDemand = Record<string, Record<string, DemandKgByGrade>>;

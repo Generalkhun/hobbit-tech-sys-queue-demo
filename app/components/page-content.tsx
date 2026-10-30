@@ -6,7 +6,7 @@ import { DeliveryNotesPage } from "@/app/components/delivery-notes-page";
 import { DirectoryPage } from "@/app/components/directory-page";
 import { DriverPortalPage } from "@/app/components/driver-portal-page";
 import { OverviewPage } from "@/app/components/overview-page";
-import { PlansPage } from "@/app/components/plans-page";
+import { PlansLandingPage } from "@/app/components/plans/plans-landing-page";
 import { QueueCheckPage } from "@/app/components/queue-check-page";
 import { DriversPage } from "@/app/components/registry/drivers-page";
 import { VehiclesPage } from "@/app/components/registry/vehicles-page";
@@ -21,6 +21,7 @@ import { mockBlacklist } from "@/app/data/mock-data";
 import { acknowledgeShopPolicies } from "@/app/data/policy-store";
 import { canManagePlans, getQueueShortcut } from "@/app/data/overview-queue";
 import type { useCapacityConfig } from "@/app/hooks/use-capacity-config";
+import type { useDailyDemand } from "@/app/hooks/use-daily-demand";
 import type { useDeliveryDrafts } from "@/app/hooks/use-delivery-drafts";
 import type { useDriverCheckin } from "@/app/hooks/use-driver-checkin";
 import type { useDriverRegistry } from "@/app/hooks/use-driver-registry";
@@ -38,6 +39,7 @@ export interface PageContentProps {
   registry: ReturnType<typeof useDriverRegistry>;
   vehicleRegistry: ReturnType<typeof useVehicleRegistry>;
   capacity: ReturnType<typeof useCapacityConfig>;
+  dailyDemand: ReturnType<typeof useDailyDemand>;
   sellerDirectory: ReturnType<typeof useSellerDirectory>;
   deliveryDrafts: ReturnType<typeof useDeliveryDrafts>;
   driverCheckin: ReturnType<typeof useDriverCheckin>;
@@ -64,7 +66,7 @@ export function PageContent(props: PageContentProps) {
   const { user, page, acknowledgements, onNavigate } = props;
   const { queue, registry, capacity, sellerDirectory, deliveryDrafts, driverCheckin } =
     props;
-  const { vehicleRegistry } = props;
+  const { vehicleRegistry, dailyDemand } = props;
   const isAdmin = user.role === "admin";
   const shopNames = sellerDirectory.shops.map((shop) => shop.name);
   const vehicleTypeNames = directoryRecords["vehicle-types"].map((type) => type.name);
@@ -111,18 +113,23 @@ export function PageContent(props: PageContentProps) {
     }
     case "plans":
       return (
-        <PlansPage
-          plans={queue.plans}
-          bookings={queue.bookings}
-          capacityConfig={capacity.draftConfig}
-          savedConfig={capacity.savedConfig}
-          savedDays={capacity.savedDays}
-          onSaveDay={capacity.saveDay}
-          onEditDay={capacity.editDay}
-          onDiscardDay={capacity.discardDay}
-          onHourlyDefaultChange={capacity.changeHourlyDefault}
-          onSlotCapacitiesChange={capacity.changeSlotCapacities}
-          onSlotCapacitiesReset={capacity.resetSlotCapacity}
+        <PlansLandingPage
+          role={user.role}
+          demand={dailyDemand.demand}
+          onSaveDemand={dailyDemand.saveDemand}
+          slotPlan={{
+            plans: queue.plans,
+            bookings: queue.bookings,
+            capacityConfig: capacity.draftConfig,
+            savedConfig: capacity.savedConfig,
+            savedDays: capacity.savedDays,
+            onSaveDay: capacity.saveDay,
+            onEditDay: capacity.editDay,
+            onDiscardDay: capacity.discardDay,
+            onHourlyDefaultChange: capacity.changeHourlyDefault,
+            onSlotCapacitiesChange: capacity.changeSlotCapacities,
+            onSlotCapacitiesReset: capacity.resetSlotCapacity,
+          }}
         />
       );
     case "booking":

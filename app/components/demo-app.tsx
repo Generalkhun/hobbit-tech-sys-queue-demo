@@ -14,6 +14,7 @@ import {
 } from "@/app/data/policy-store";
 import { useCapacityConfig } from "@/app/hooks/use-capacity-config";
 import { useDeliveryDrafts } from "@/app/hooks/use-delivery-drafts";
+import { useDailyDemand } from "@/app/hooks/use-daily-demand";
 import { useDriverCheckin } from "@/app/hooks/use-driver-checkin";
 import { useVehicleRegistry } from "@/app/hooks/use-vehicle-registry";
 import { useDriverRegistry } from "@/app/hooks/use-driver-registry";
@@ -38,6 +39,7 @@ export function DemoApp() {
   const registry = useDriverRegistry(user?.name ?? "—");
   const vehicleRegistry = useVehicleRegistry(user?.name ?? "—");
   const capacity = useCapacityConfig();
+  const dailyDemand = useDailyDemand();
   const sellerDirectory = useSellerDirectory(user?.name ?? "—");
   const queue = useQueueBookings({
     user,
@@ -103,6 +105,7 @@ export function DemoApp() {
         registry={registry}
         vehicleRegistry={vehicleRegistry}
         capacity={capacity}
+        dailyDemand={dailyDemand}
         sellerDirectory={sellerDirectory}
         deliveryDrafts={deliveryDrafts}
         driverCheckin={driverCheckin}
