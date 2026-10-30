@@ -31,7 +31,8 @@ export type IconName =
   | "refresh"
   | "circle-check"
   | "user"
-  | "sparkle";
+  | "sparkle"
+  | "info";
 
 const paths: Record<IconName, string> = {
   dashboard: "M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z",
@@ -62,6 +63,7 @@ const paths: Record<IconName, string> = {
   filter: "M4 7h16M7 12h10m-7 5h4",
   scan: "M3 7V5a2 2 0 0 1 2-2h2m10 0h2a2 2 0 0 1 2 2v2m0 10v2a2 2 0 0 1-2 2h-2m-10 0H5a2 2 0 0 1-2-2v-2M7 12h10",
   refresh: "M20 7v5h-5M4 17v-5h5m-4-2a8 8 0 0 1 13-3l2 2M4 15l2 2a8 8 0 0 0 13-3",
+  info: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-11v6m0-10v.01",
   "circle-check": "M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3",
   user: "M20 21a8 8 0 0 0-16 0m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
   sparkle: "m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Zm7 12 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z",

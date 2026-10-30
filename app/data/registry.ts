@@ -7,6 +7,7 @@ import type {
   VehicleRecord,
 } from "@/app/types/registry";
 import type { NoteWithAttachments } from "@/app/types/common";
+import { findProvinceCode } from "@/app/data/directories";
 
 export const driverWizardSteps = 4;
 export const vehicleWizardSteps = 4;
@@ -62,6 +63,16 @@ export function nextRegistryId(prefix: string, ids: string[]) {
     return Number.isFinite(value) ? Math.max(highest, value) : highest;
   }, 0);
   return `${prefix}-${String(max + 1).padStart(3, "0")}`;
+}
+
+/**
+ * id ของรถยนต์ = ทะเบียน + รหัสจังหวัด
+ * (ทะเบียนสามารถออกซ้ำได้ในต่างจังหวัด จึงใช้ทะเบียน+จังหวัดเป็นเอกลักษณ์)
+ */
+export function buildVehicleId(plate: string, province: string): string {
+  const cleanPlate = plate.trim().toUpperCase();
+  const code = findProvinceCode(province) ?? "00";
+  return `${cleanPlate}-${code}`;
 }
 
 export function createEmptyDriver(id: string): DriverRecord {
@@ -178,11 +189,26 @@ export function saveDriverDraft(driver: DriverRecord, step: number): DriverRecor
 }
 
 export function finalizeVehicle(vehicle: VehicleRecord, isAdmin: boolean): VehicleRecord {
-  return { ...vehicle, status: getCompletionStatus(isAdmin), draftStep: undefined };
+  return {
+    ...vehicle,
+    id: vehicle.plate.trim()
+      ? buildVehicleId(vehicle.plate, vehicle.province)
+      : vehicle.id,
+    status: getCompletionStatus(isAdmin),
+    draftStep: undefined,
+  };
 }
 
 export function saveVehicleDraft(vehicle: VehicleRecord, step: number): VehicleRecord {
-  return { ...vehicle, status: "draft", draftStep: step };
+  return {
+    ...vehicle,
+    // ยังไม่กรอกทะเบียน → เก็บ id เดิม (กันการชนกันของ draft ที่ทะเบียนว่าง)
+    id: vehicle.plate.trim()
+      ? buildVehicleId(vehicle.plate, vehicle.province)
+      : vehicle.id,
+    status: "draft",
+    draftStep: step,
+  };
 }
 
 export const statusActionTargets: Record<RegistryStatusAction, RegistryStatus> = {

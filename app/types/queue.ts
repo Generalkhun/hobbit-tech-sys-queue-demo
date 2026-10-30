@@ -74,6 +74,8 @@ export interface QueueBooking {
   driver: string;
   carrier: string;
   plate: string;
+  /** จังหวัดทะเบียนรถ — ร่วมกับทะเบียนเป็น id รถ (ทะเบียนซ้ำกันได้ข้ามจังหวัด) */
+  province?: string;
   status: BookingStatus;
   ticketName: string;
   createdAt: string;
@@ -101,6 +103,8 @@ export interface DeliveryDraft {
   employmentType: DriverRecord["employmentType"];
   carrier: string;
   plate: string;
+  /** จังหวัดทะเบียน — ใช้ร่วมกับทะเบียนเป็น id รถ (ทะเบียนซ้ำกันได้ข้ามจังหวัด) */
+  province: string;
   driver: string;
 }
 

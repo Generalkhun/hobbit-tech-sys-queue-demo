@@ -21,8 +21,7 @@ import { SellerProfilePage } from "@/app/components/seller-profile-page";
 import { ShopProfilePage } from "@/app/components/shop-profile-page";
 import { ShopsPage } from "@/app/components/shops-page";
 import { Panel } from "@/app/components/ui";
-import { directoryDefinitions, isDirectoryPage } from "@/app/data/directories";
-import { directoryRecords } from "@/app/data/mocks/directories";
+import { isDirectoryPage, vehicleTypes } from "@/app/data/directories";
 import { mockBlacklist } from "@/app/data/mock-data";
 import { acknowledgeShopPolicies } from "@/app/data/policy-store";
 import { canManagePlans, getQueueShortcut } from "@/app/data/overview-queue";
@@ -75,7 +74,7 @@ export function PageContent(props: PageContentProps) {
   const { vehicleRegistry, dailyDemand } = props;
   const isAdmin = user.role === "admin";
   const shopNames = sellerDirectory.shops.map((shop) => shop.name);
-  const vehicleTypeNames = directoryRecords["vehicle-types"].map((type) => type.name);
+  const vehicleTypeNames = vehicleTypes.map((type) => type.name);
   const [vehicleFocusId, setVehicleFocusId] = useState<string | null>(null);
 
   // เมื่อออกจากหน้า "vehicles" ให้ล้างสถานะการโฟกัสรถ (กันการค้างหน้าดูรายละเอียด)
@@ -333,9 +332,7 @@ export function PageContent(props: PageContentProps) {
     }
     default:
       if (isDirectoryPage(page)) {
-        return (
-          <DirectoryPage definition={directoryDefinitions[page]} canManage={isAdmin} />
-        );
+        return <DirectoryPage page={page} vehicles={vehicleRegistry.vehicles} />;
       }
       return (
         <Panel className="p-6 text-sm text-slate-500">

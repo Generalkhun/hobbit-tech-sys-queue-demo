@@ -1,33 +1,23 @@
-import { directoryRecords } from "@/app/data/mocks/directories";
-import type { DirectoryDefinition, DirectoryPageKey } from "@/app/types/directory";
+import { provinceRecords, vehicleTypeRecords } from "@/app/data/mocks/directories";
+import type { ProvinceRecord, VehicleTypeRecord } from "@/app/types/directory";
 import type { PageKey } from "@/app/types/queue";
 
-export type { DirectoryDefinition, DirectoryPageKey, DirectoryRecord } from "@/app/types/directory";
-
-export const directoryDefinitions: Record<
+export type {
   DirectoryPageKey,
-  DirectoryDefinition
-> = {
-  provinces: {
-    page: "provinces",
-    title: "จังหวัด",
-    description: "ข้อมูลพื้นที่สำหรับร้านค้าและบริษัทขนส่ง",
-    noun: "จังหวัด",
-    icon: "map",
-    columns: ["ภูมิภาค", "จำนวนร้านค้า"],
-    records: directoryRecords["provinces"],
-  },
-  "vehicle-types": {
-    page: "vehicle-types",
-    title: "ประเภทรถ",
-    description: "กำหนดประเภทและรายละเอียดรถที่ใช้ลงทะเบียน",
-    noun: "ประเภทรถ",
-    icon: "truck",
-    columns: ["ความจุโดยประมาณ", "สถานะการใช้งาน"],
-    records: directoryRecords["vehicle-types"],
-  },
-};
+  ProvinceRecord,
+  VehicleTypeRecord,
+  VehicleTypeSpec,
+} from "@/app/types/directory";
 
-export function isDirectoryPage(page: PageKey): page is DirectoryPageKey {
-  return page in directoryDefinitions;
+export const provinces = provinceRecords;
+export const vehicleTypes = vehicleTypeRecords;
+
+export function isDirectoryPage(page: PageKey): page is "provinces" | "vehicle-types" {
+  return page === "provinces" || page === "vehicle-types";
+}
+
+/** ค้นหาจังหวัดจากชื่อ — ใช้สำหรับสร้าง id รถ (ทะเบียน-รหัสจังหวัด) */
+export function findProvinceCode(name: string): string | null {
+  const province = provinceRecords.find((item) => item.name === name.trim());
+  return province ? province.code : null;
 }

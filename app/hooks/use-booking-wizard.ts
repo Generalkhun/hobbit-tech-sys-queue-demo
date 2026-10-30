@@ -7,7 +7,6 @@ import {
 import { schedulePlant } from "@/app/data/scheduling";
 import { bookableSlots } from "@/app/data/slot-time";
 import {
-  getVehicleKey,
   scopeVehicles,
   groupRegistryVehicles,
   findSellerByName,
@@ -78,11 +77,16 @@ export function useBookingWizard({
   const allVehicles = groupRegistryVehicles(vehicles, approvedDrivers);
   const vehiclesByScope = groupRegistryVehicles(scopedVehicles, approvedDrivers);
   const [vehicleKey, setVehicleKey] = useState(() =>
-    draft.carrier && draft.plate
-      ? `${draft.carrier}::${draft.plate}`
-      : vehiclesByScope[0]
-        ? vehiclesByScope[0].key
-        : "",
+    (draft.carrier && draft.plate
+      ? vehiclesByScope.find(
+          (vehicle) =>
+            vehicle.plate === draft.plate && vehicle.province === draft.province,
+        )?.key ??
+        vehiclesByScope.find(
+          (vehicle) =>
+            vehicle.plate === draft.plate && vehicle.carrier === draft.carrier,
+        )?.key
+      : undefined) ?? vehiclesByScope[0]?.key ?? "",
   );
   // เมื่อสังกัดเปลี่ยน (เช่น ผู้ขายเปลี่ยนร้านค้า) ให้เลือกรถคันแรกของสังกัดใหม่
   useEffect(() => {
@@ -164,6 +168,7 @@ export function useBookingWizard({
       employmentType,
       carrier: selectedVehicle?.carrier ?? "",
       plate: selectedVehicle?.plate ?? "",
+      province: selectedVehicle?.province ?? "",
       driver: selectedDriver?.name ?? "",
     };
   }
@@ -271,6 +276,7 @@ export function useBookingWizard({
       driver: selectedDriver.name,
       carrier: selectedVehicle.carrier,
       plate: selectedVehicle.plate,
+      province: selectedVehicle.province,
       ticketName: form.ticketName,
     });
     if (creation.error || !creation.booking) {

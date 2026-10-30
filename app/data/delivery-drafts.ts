@@ -40,6 +40,7 @@ export function createDeliveryDraft(
     employmentType: "contractor",
     carrier: firstDriver?.carrier ?? "",
     plate: firstDriver?.plate ?? "",
+    province: "",
     driver: "",
   };
 }
@@ -61,6 +62,7 @@ export function bookingToViewDraft(booking: QueueBooking): DeliveryDraft {
     employmentType: "contractor",
     carrier: booking.carrier,
     plate: booking.plate,
+    province: booking.province ?? "",
     driver: booking.driver,
   };
 }

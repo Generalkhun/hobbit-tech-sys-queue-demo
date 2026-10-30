@@ -1,20 +1,27 @@
-export type DirectoryPageKey =
-  | "provinces"
-  | "vehicle-types";
+export type DirectoryPageKey = "provinces" | "vehicle-types";
 
-export interface DirectoryRecord {
-  id: string;
+/** จังหวัดในระบบ — code คือรหัสมาตรฐานกรมการขนส่งทางบก */
+export interface ProvinceRecord {
+  code: string;
   name: string;
-  detail: string;
-  status: "active" | "pending";
+  region: string;
 }
 
-export interface DirectoryDefinition {
-  page: DirectoryPageKey;
-  title: string;
+/** Spec ของประเภทรถยนต์ */
+export interface VehicleTypeSpec {
+  /** ความเหมาะสมในการบรรทุกเหล็ก */
+  suitableFor: string;
+  /** น้ำหนักสูงสุดที่เหมาะสม (ตัน) */
+  maxTons: number;
+  note?: string;
+}
+
+/** ประเภทรถยนต์ */
+export interface VehicleTypeRecord {
+  id: string;
+  name: string;
   description: string;
-  noun: string;
-  icon: "users" | "warehouse" | "truck" | "map" | "weight";
-  columns: [string, string];
-  records: DirectoryRecord[];
+  /** รูปภาพประเภทรถ — ใส่ได้หลายรูป */
+  images: string[];
+  spec: VehicleTypeSpec;
 }

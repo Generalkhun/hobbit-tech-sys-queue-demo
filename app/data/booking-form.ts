@@ -13,9 +13,10 @@ export const retailerNames: string[] = [
 ];
 
 export function getVehicleKey(
-  driver: Pick<DriverRecord, "carrier" | "plate">,
+  vehicle: Pick<VehicleRecord, "plate" | "province">,
 ) {
-  return `${driver.carrier}::${driver.plate}`;
+  // รถยนต์ unique ด้วยทะเบียน+จังหวัด (ทะเบียนออกซ้ำได้ถ้าต่างจังหวัด)
+  return `${vehicle.plate}::${vehicle.province || ""}`;
 }
 
 /**
@@ -58,8 +59,8 @@ export function groupRegistryVehicles(
     .filter((vehicle) => vehicle.plate.trim() !== "")
     .map((vehicle) => {
       const key = getVehicleKey({
-        carrier: vehicle.carrier,
         plate: vehicle.plate,
+        province: vehicle.province,
       });
       return {
         key,

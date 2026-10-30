@@ -1,11 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { inputClassName } from "@/app/components/ui";
-import { directoryRecords } from "@/app/data/mocks/directories";
+import { provinces } from "@/app/data/directories";
 
 const provinceListId = "province-options";
 
-/** ช่องจังหวัดพร้อมรายการแนะนำจากข้อมูลจังหวัดของระบบ */
+/** ช่องจังหวัดพร้อมรายการแนะนำจากข้อมูลจังหวัดของระบบ (มีรหัสจังหวัดกำกับ) */
 export function ProvinceField({
   value,
   onChange,
@@ -15,6 +16,15 @@ export function ProvinceField({
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
+  const options = useMemo(
+    () =>
+      provinces.map((province) => ({
+        name: province.name,
+        code: province.code,
+      })),
+    [],
+  );
+
   return (
     <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
       จังหวัด
@@ -26,8 +36,10 @@ export function ProvinceField({
         onChange={(event) => onChange(event.target.value)}
       />
       <datalist id={provinceListId}>
-        {directoryRecords.provinces.map((province) => (
-          <option key={province.id} value={province.name} />
+        {options.map((province) => (
+          <option key={province.code} value={province.name}>
+            {province.name} ({province.code})
+          </option>
         ))}
       </datalist>
     </label>
