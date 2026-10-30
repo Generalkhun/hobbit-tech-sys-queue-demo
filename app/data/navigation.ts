@@ -118,7 +118,7 @@ export const pageDetails: Record<PageKey, { title: string; subtitle: string }> =
   },
   "driver-checkin": {
     title: "เช็คอิน online",
-    subtitle: "เริ่มเช็คอินเมื่ออยู่ในรัศมี 10 กิโลเมตรจากโรงงาน",
+    subtitle: "เริ่มเช็คอินเมื่ออยู่ในรัศมี 50 กิโลเมตรจากโรงงาน",
   },
   "driver-queue": {
     title: "แถบรอคิว",

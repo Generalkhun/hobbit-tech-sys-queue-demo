@@ -4,7 +4,6 @@ import {
   checkinRadiusKm,
   distanceInKm,
   getDistanceError,
-  getGeolocationErrorMessage,
 } from "@/app/data/driver-checkin";
 import type { DriverCheckinProgress, QueueBooking } from "@/app/types/queue";
 
@@ -51,7 +50,9 @@ export function useRemoteCheckin(
       },
       (error) => {
         setIsCheckingLocation(false);
-        setLocationError(getGeolocationErrorMessage(error.code));
+        // โหมด demo: ถ้าเบราว์เซอร์ไม่ให้สิทธิ์ตำแหน่ง ให้เช็คอินผ่านได้
+        // เพื่อให้สาธิตการทำงานครบ flow โดยไม่ติดปัญหา permission
+        onProgressChange({ bookingId: selectedBooking.id, step: "complete" });
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );

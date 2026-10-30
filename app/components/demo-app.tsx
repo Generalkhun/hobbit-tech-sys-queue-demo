@@ -75,6 +75,7 @@ export function DemoApp() {
       if (!match) return;
       const [, bookingId, token] = match;
       setDriverLink({ bookingId, token });
+      setPage("driver-checkin");
     }
     parseDriverLink();
   }, []);
@@ -118,51 +119,60 @@ export function DemoApp() {
     const currentDriver = registry.drivers.find(
       (driver) => driver.name === checkinBooking.driver,
     );
+    const linkDriver: DemoUser = {
+      id: "driver-link",
+      name: currentDriver?.name ?? checkinBooking.driver,
+      organization: `${checkinBooking.carrier} · พนักงานขับรถ`,
+      role: "driver",
+      initials: (currentDriver?.name ?? checkinBooking.driver).slice(0, 2),
+    };
+    const linkPages: PageKey[] = ["driver-pass", "driver-checkin", "driver-queue"];
+    function navigateInLink(nextPage: PageKey) {
+      if (linkPages.includes(nextPage)) setPage(nextPage);
+    }
     // เปิดหน้าเช็คอินของงานนี้โดยตรง (เข้าสู่ระบบผ่านลิงก์แล้ว)
     return (
-      <main className="min-h-screen bg-[#f4f8fa]">
-        <header className="border-b border-slate-100 bg-white px-4 py-4 sm:px-7">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-black italic tracking-[-2px] text-sys-700">
-              SYS
-            </span>
-            <span className="h-5 w-px bg-slate-200" />
-            <span className="text-xs font-medium text-slate-500">
-              ระบบจัดการคิวรับเศษเหล็ก · เช็คอินคนขับ
-            </span>
-          </div>
-        </header>
-        <div className="mx-auto max-w-[1480px] px-4 py-8 sm:px-7 xl:px-10">
-          <DriverPortalPage
-            page={page === "driver-pass" ? "driver-checkin" : page}
-            driver={
-              currentDriver ?? {
-                id: "link-driver",
-                name: checkinBooking.driver,
-                prefix: "",
-                firstName: "",
-                lastName: "",
-                employmentType: "contractor",
-                shopName: "",
-                carrier: checkinBooking.carrier,
-                plate: checkinBooking.plate,
-                phone: "",
-                email: "",
-                nationalId: "",
-                licenseNumber: "",
-                status: "active",
-              }
+      <AppShell
+        user={linkDriver}
+        page={page}
+        onNavigate={navigateInLink}
+        onLogout={() => {
+          setDriverLink(null);
+          setPage("overview");
+          if (typeof window !== "undefined") {
+            window.location.hash = "";
+          }
+        }}
+      >
+        <DriverPortalPage
+          page={page}
+          driver={
+            currentDriver ?? {
+              id: "link-driver",
+              name: checkinBooking.driver,
+              prefix: "",
+              firstName: "",
+              lastName: "",
+              employmentType: "contractor",
+              shopName: "",
+              carrier: checkinBooking.carrier,
+              plate: checkinBooking.plate,
+              phone: "",
+              email: "",
+              nationalId: "",
+              licenseNumber: "",
+              status: "active",
             }
-            bookings={queue.bookings}
-            linkBookingId={checkinBooking.id}
-            progress={driverCheckin.progress}
-            contactPhones={driverCheckin.contactPhones}
-            onProgressChange={driverCheckin.setProgress}
-            onContactPhonesChange={driverCheckin.setContactPhones}
-            onNavigate={(nextPage) => setPage(nextPage)}
-          />
-        </div>
-      </main>
+          }
+          bookings={queue.bookings}
+          linkBookingId={checkinBooking.id}
+          progress={driverCheckin.progress}
+          contactPhones={driverCheckin.contactPhones}
+          onProgressChange={driverCheckin.setProgress}
+          onContactPhonesChange={driverCheckin.setContactPhones}
+          onNavigate={navigateInLink}
+        />
+      </AppShell>
     );
   }
 

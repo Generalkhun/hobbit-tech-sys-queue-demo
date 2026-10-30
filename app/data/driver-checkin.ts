@@ -1,6 +1,6 @@
 import type { ContactPhonesValidation } from "../types/driver-portal.ts";
 
-export const checkinRadiusKm = 10;
+export const checkinRadiusKm = 50;
 
 const phonePattern = /^[0-9+()\-\s]{9,15}$/;
 const geolocationPermissionDenied = 1;
