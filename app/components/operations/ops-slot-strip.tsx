@@ -106,7 +106,7 @@ export function OpsSlotStrip({
     <Panel className="p-5 sm:p-6">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-sys-900">กิจกรรมตามช่วงเวลา (pipeline)</h2>
+          <h2 className="text-lg font-bold text-sys-900">กิจกรรมตามช่วงเวลา</h2>
           <p className="text-xs text-slate-400">
             จำนวนรถในแต่ละขั้นตอนของแต่ละ slot เทียบกับจำนวนที่รับได้ในแผนรับเหล็ก · สีแดง = เกิน cap
           </p>
