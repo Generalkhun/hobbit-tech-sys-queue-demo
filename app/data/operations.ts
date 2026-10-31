@@ -20,6 +20,7 @@ export const operationTabs: { id: OperationTab; label: string; statuses: Booking
       "call-requested",
       "called",
       "no-answer",
+      "completed",
     ],
   },
   { id: "all", label: "ทั้งหมด", statuses: [] },

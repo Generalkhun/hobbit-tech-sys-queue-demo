@@ -16,7 +16,7 @@ export function CapacitySummary({
     <Panel className="p-5 sm:p-6">
       <h2 className="text-lg font-bold text-sys-900">สรุปการรับเหล็กทั้งวัน</h2>
       <p className="text-xs text-slate-400">
-        จำนวนรถรวมทุกช่วงเวลา × {KG_PER_VEHICLE_FACTOR} = กก.
+        จำนวนรถรวมทุกช่วงเวลา × {KG_PER_VEHICLE_FACTOR} = ตัน (1000 กก.).
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {summary.map((row) => {

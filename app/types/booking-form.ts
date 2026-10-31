@@ -7,8 +7,7 @@ import type {
   PolicyAcknowledgement,
   QueueBooking,
 } from "@/app/types/queue";
-import type { CapacityResolver } from "@/app/data/slot-capacity";
-import type { RushHourOverrideResolver } from "@/app/data/slot-capacity";
+import type { CapacityResolver, RushHourOverrideResolver, SlotCapacityConfig } from "@/app/data/slot-capacity";
 import type { VehicleRecord, RegistryStatus } from "@/app/types/registry";
 import type { Seller, SellerShop } from "@/app/types/seller";
 
@@ -67,6 +66,7 @@ export interface BookingPageProps {
   bookings: QueueBooking[];
   resolveCapacity: CapacityResolver;
   isRushHourReopened: RushHourOverrideResolver;
+  capacityConfig: SlotCapacityConfig;
   acknowledgements: PolicyAcknowledgement[];
   onCreate: (booking: NewBooking) => BookingCreationResult;
   onGoToRegistry: () => void;

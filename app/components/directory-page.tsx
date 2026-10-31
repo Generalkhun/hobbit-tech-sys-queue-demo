@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { provinces, vehicleTypes } from "@/app/data/directories";
+import { provinces, vehicleTypes as initialVehicleTypes } from "@/app/data/directories";
+import { validateImageFile } from "@/app/data/image-file";
 import { Icon } from "@/app/components/icons";
-import { Button, Panel } from "@/app/components/ui";
+import { Button, inputClassName, Panel } from "@/app/components/ui";
 import type { PageKey } from "@/app/types/queue";
 import type { VehicleRecord } from "@/app/types/registry";
+import type { VehicleTypeRecord } from "@/app/types/directory";
 
 export function DirectoryPage({
   page,
@@ -146,8 +148,36 @@ function VehicleTypesPage({
 }: {
   vehicles: VehicleRecord[];
 }) {
+  const [types, setTypes] = useState<VehicleTypeRecord[]>(initialVehicleTypes);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = vehicleTypes.find((vt) => vt.id === selectedId);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newType, setNewType] = useState({ name: "", description: "", maxTons: "" });
+  const [newTypeImages, setNewTypeImages] = useState<string[]>([]);
+  const [addError, setAddError] = useState("");
+  const selected = types.find((vt) => vt.id === selectedId);
+
+  function addVehicleType() {
+    setAddError("");
+    const name = newType.name.trim();
+    const desc = newType.description.trim();
+    const maxTons = Number(newType.maxTons);
+    if (!name) { setAddError("กรุณากรอกชื่อประเภทรถ"); return; }
+    if (!desc) { setAddError("กรุณากรอกรายละเอียด"); return; }
+    if (!Number.isFinite(maxTons) || maxTons <= 0) { setAddError("กรุณากรอกน้ำหนักสูงสุดที่ถูกต้อง"); return; }
+    const nextNum = types.length + 1;
+    const id = `VT-${String(nextNum).padStart(2, "0")}`;
+    const record: VehicleTypeRecord = {
+      id,
+      name,
+      description: desc,
+      images: newTypeImages,
+      spec: { suitableFor: desc, maxTons, note: undefined },
+    };
+    setTypes((current) => [...current, record]);
+    setShowAddForm(false);
+    setNewType({ name: "", description: "", maxTons: "" });
+    setNewTypeImages([]);
+  }
 
   return (
     <div className="space-y-5">
@@ -164,7 +194,60 @@ function VehicleTypesPage({
               </p>
             </div>
           </div>
+          <Button variant="secondary" onClick={() => { setShowAddForm(true); setAddError(""); }}>
+            <Icon name="plus" size={16} />
+            เพิ่มประเภทรถ
+          </Button>
         </div>
+
+        {/* แบบฟอร์มเพิ่มประเภทรถ */}
+        {showAddForm && (
+          <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                ชื่อประเภทรถ <span className="text-rose-500">*</span>
+                <input className={inputClassName} placeholder="เช่น รถบรรทุก 4 ล้อ" value={newType.name} onChange={(e) => setNewType((c) => ({ ...c, name: e.target.value }))} />
+              </div>
+              <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                รายละเอียด <span className="text-rose-500">*</span>
+                <input className={inputClassName} placeholder="รายละเอียดสั้น ๆ" value={newType.description} onChange={(e) => setNewType((c) => ({ ...c, description: e.target.value }))} />
+              </div>
+              <div className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                น้ำหนักสูงสุด (ตัน) <span className="text-rose-500">*</span>
+                <input className={inputClassName} type="number" min={1} placeholder="เช่น 20" value={newType.maxTons} onChange={(e) => setNewType((c) => ({ ...c, maxTons: e.target.value }))} />
+              </div>
+              <div className="flex items-end gap-2">
+                <Button onClick={addVehicleType}>บันทึก</Button>
+                <Button variant="secondary" onClick={() => { setShowAddForm(false); setAddError(""); setNewTypeImages([]); }}>ยกเลิก</Button>
+              </div>
+            </div>
+            {/* รูปภาพ */}
+            <div className="mt-4">
+              <p className="mb-2 text-sm font-medium text-slate-700">รูปภาพประเภทรถ</p>
+              <div className="flex flex-wrap gap-3">
+                {newTypeImages.map((url, index) => (
+                  <div key={index} className="relative">
+                    <img src={url} alt={`รูปที่ ${index + 1}`} className="h-24 w-36 rounded-xl border border-slate-200 object-cover" />
+                    <button type="button" onClick={() => setNewTypeImages((c) => c.filter((_, i) => i !== index))} className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-rose-500 text-[11px] text-white shadow hover:bg-rose-600" aria-label="ลบรูป">×</button>
+                  </div>
+                ))}
+                <label className="flex h-24 w-36 cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400 hover:border-sys-300 hover:bg-sys-50">
+                  + เพิ่มรูป
+                  <input type="file" accept="image/*" className="sr-only" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const err = validateImageFile(file);
+                      if (err) setAddError(err);
+                      else setNewTypeImages((c) => [...c, URL.createObjectURL(file)]);
+                    }
+                    e.target.value = "";
+                  }} />
+                </label>
+              </div>
+            </div>
+            {addError && <p role="alert" className="mt-2 text-xs text-rose-600">{addError}</p>}
+          </div>
+        )}
 
         <div className="scrollbar-thin overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-xs">
@@ -178,7 +261,7 @@ function VehicleTypesPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {vehicleTypes.map((vt) => (
+              {types.map((vt) => (
                 <tr key={vt.id} className="hover:bg-slate-50/60">
                   <td className="px-6 py-4 font-semibold text-sys-700">
                     {vt.id}
@@ -211,7 +294,16 @@ function VehicleTypesPage({
       </Panel>
 
       {selected && (
-        <VehicleTypeDetail vehicleType={selected} vehicles={vehicles} />
+        <VehicleTypeDetail
+          vehicleType={selected}
+          vehicles={vehicles}
+          onUpdate={(updated) => {
+            setTypes((current) =>
+              current.map((t) => (t.id === updated.id ? updated : t)),
+            );
+            setSelectedId(null);
+          }}
+        />
       )}
     </div>
   );
@@ -220,13 +312,53 @@ function VehicleTypesPage({
 function VehicleTypeDetail({
   vehicleType,
   vehicles,
+  onUpdate,
 }: {
-  vehicleType: (typeof vehicleTypes)[number];
+  vehicleType: VehicleTypeRecord;
   vehicles: VehicleRecord[];
+  onUpdate: (updated: VehicleTypeRecord) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(vehicleType.name);
+  const [editDesc, setEditDesc] = useState(vehicleType.description);
+  const [editMaxTons, setEditMaxTons] = useState(String(vehicleType.spec.maxTons));
+  const [editNote, setEditNote] = useState(vehicleType.spec.note ?? "");
+  const [editImages, setEditImages] = useState<string[]>(vehicleType.images);
+  const [editError, setEditError] = useState("");
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const PAGE_SIZE = 5;
+
+  function handleSave() {
+    setEditError("");
+    const name = editName.trim();
+    const desc = editDesc.trim();
+    const maxTons = Number(editMaxTons);
+    if (!name) { setEditError("กรุณากรอกชื่อประเภทรถ"); return; }
+    if (!desc) { setEditError("กรุณากรอกรายละเอียด"); return; }
+    if (!Number.isFinite(maxTons) || maxTons <= 0) { setEditError("กรุณากรอกน้ำหนักสูงสุดที่ถูกต้อง"); return; }
+    onUpdate({
+      ...vehicleType,
+      name,
+      description: desc,
+      images: editImages,
+      spec: {
+        suitableFor: desc,
+        maxTons,
+        note: editNote || undefined,
+      },
+    });
+    setEditing(false);
+  }
+
+  function addImage(url: string | undefined) {
+    if (!url) return;
+    setEditImages((current) => [...current, url]);
+  }
+
+  function removeImage(index: number) {
+    setEditImages((current) => current.filter((_, i) => i !== index));
+  }
 
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -250,17 +382,50 @@ function VehicleTypeDetail({
   return (
     <Panel className="overflow-hidden">
       <div className="border-b border-slate-100 px-5 py-5 sm:px-6">
-        <div className="flex items-center gap-4">
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sys-50 text-sys-700">
-            <Icon name="truck" size={26} />
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-sys-50 text-sys-700">
+              <Icon name="truck" size={26} />
+            </div>
+            <div>
+              {editing ? (
+                <input
+                  className={`${inputClassName} text-lg font-bold`}
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                />
+              ) : (
+                <h3 className="text-lg font-bold text-sys-900">
+                  {vehicleType.name}
+                </h3>
+              )}
+              {editing ? (
+                <input
+                  className={`${inputClassName} mt-1 text-xs`}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                />
+              ) : (
+                <p className="mt-1 text-xs text-slate-500">
+                  {vehicleType.description}
+                </p>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-sys-900">
-              {vehicleType.name}
-            </h3>
-            <p className="mt-1 text-xs text-slate-500">
-              {vehicleType.description}
-            </p>
+          <div className="flex shrink-0 gap-2">
+            {editing ? (
+              <>
+                <Button variant="secondary" onClick={() => { setEditing(false); setEditName(vehicleType.name); setEditDesc(vehicleType.description); setEditMaxTons(String(vehicleType.spec.maxTons)); setEditNote(vehicleType.spec.note ?? ""); setEditImages(vehicleType.images); setEditError(""); }}>
+                  ยกเลิก
+                </Button>
+                <Button onClick={handleSave}>บันทึก</Button>
+              </>
+            ) : (
+              <Button variant="secondary" onClick={() => setEditing(true)}>
+                <Icon name="document" size={14} />
+                แก้ไข
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -268,22 +433,58 @@ function VehicleTypeDetail({
       {/* รูปภาพประเภทรถ */}
       <div className="px-5 py-4 sm:px-6">
         <h4 className="mb-3 text-sm font-bold text-sys-800">รูปภาพประเภทรถ</h4>
-        {vehicleType.images.length > 0 ? (
+        {(editing ? editImages : vehicleType.images).length > 0 ? (
           <div className="flex flex-wrap gap-3">
-            {vehicleType.images.map((url, index) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={index}
-                src={url}
-                alt={`${vehicleType.name} รูปที่ ${index + 1}`}
-                className="h-32 w-48 rounded-xl border border-slate-200 object-cover"
-              />
+            {(editing ? editImages : vehicleType.images).map((url, index) => (
+              <div key={index} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`${vehicleType.name} รูปที่ ${index + 1}`}
+                  className="h-32 w-48 rounded-xl border border-slate-200 object-cover"
+                />
+                {editing && (
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-rose-500 text-[11px] text-white shadow hover:bg-rose-600"
+                    aria-label="ลบรูป"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         ) : (
           <p className="text-xs text-slate-400">
             ยังไม่มีรูปภาพสำหรับประเภทรถนี้
           </p>
+        )}
+        {editing && (
+          <div className="mt-3">
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-sys-700 hover:border-sys-300 hover:bg-sys-50">
+              <Icon name="plus" size={14} />
+              เพิ่มรูปภาพ
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const error = validateImageFile(file);
+                    if (error) {
+                      setEditError(error);
+                    } else {
+                      addImage(URL.createObjectURL(file));
+                    }
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
         )}
       </div>
 
@@ -301,20 +502,50 @@ function VehicleTypeDetail({
           <p className="text-[11px] font-semibold text-sys-700">
             น้ำหนักสูงสุด
           </p>
-          <p className="mt-1 text-2xl font-bold text-sys-900">
-            {vehicleType.spec.maxTons}
-            <span className="ml-1 text-xs text-slate-400">ตัน</span>
-          </p>
+          {editing ? (
+            <div className="mt-1 flex items-center gap-1">
+              <input
+                className={`${inputClassName} w-24 text-right text-lg font-bold`}
+                type="number"
+                min={1}
+                value={editMaxTons}
+                onChange={(e) => setEditMaxTons(e.target.value)}
+              />
+              <span className="text-xs text-slate-400">ตัน</span>
+            </div>
+          ) : (
+            <p className="mt-1 text-2xl font-bold text-sys-900">
+              {vehicleType.spec.maxTons}
+              <span className="ml-1 text-xs text-slate-400">ตัน</span>
+            </p>
+          )}
         </div>
-        {vehicleType.spec.note && (
+        {editing || vehicleType.spec.note ? (
           <div className="rounded-xl bg-amber-50/70 p-4">
             <p className="text-[11px] font-semibold text-amber-700">หมายเหตุ</p>
-            <p className="mt-1 text-xs text-amber-800">
-              {vehicleType.spec.note}
-            </p>
+            {editing ? (
+              <input
+                className={`${inputClassName} mt-1 w-full text-xs`}
+                placeholder="หมายเหตุ (ถ้ามี)"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+              />
+            ) : (
+              <p className="mt-1 text-xs text-amber-800">
+                {vehicleType.spec.note}
+              </p>
+            )}
           </div>
-        )}
+        ) : null}
       </div>
+
+      {editError && (
+        <div className="px-5 pb-4 sm:px-6">
+          <p role="alert" className="rounded-lg bg-rose-50 px-4 py-2 text-xs text-rose-700">
+            {editError}
+          </p>
+        </div>
+      )}
 
       {/* รถในระบบที่ตรงกับประเภทนี้ */}
       <div className="border-t border-slate-100 px-5 py-4 sm:px-6">

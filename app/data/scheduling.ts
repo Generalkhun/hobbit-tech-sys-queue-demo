@@ -2,8 +2,10 @@ import type { PlanRow, QueueBooking } from "@/app/types/queue";
 import {
   createCapacityResolver,
   createRushHourOverrideResolver,
+  getSlotClosure,
   type CapacityResolver,
   type RushHourOverrideResolver,
+  type SlotCapacityConfig,
 } from "./slot-capacity.ts";
 import { isSlotInsideWindow, overlapsRushHour } from "./slot-time.ts";
 
@@ -21,6 +23,8 @@ export interface PlantScheduleOption {
   remainingVehicles: number;
   gradeShortageTons: number;
   fulfilledShortageTons: number;
+  /** slot นี้ถูกปิดรับด้วยตนเอง (จากแผน) */
+  manuallyClosed?: boolean;
 }
 
 export interface ScheduleDecision {
@@ -56,6 +60,7 @@ export function getPlantScheduleOptions(
   excludeBookingId?: string,
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
   isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
+  capacityConfig?: SlotCapacityConfig,
 ): PlantScheduleOption[] {
   return plans
     .filter(
@@ -78,6 +83,10 @@ export function getPlantScheduleOptions(
         request.timeSlot,
         request.grade,
       );
+      const manuallyClosed =
+        capacityConfig !== undefined &&
+        getSlotClosure(capacityConfig, request.date, plan.plantId, request.timeSlot) !==
+          undefined;
       const gradeShortageTons = Math.max(0, plan.dailyLimit - plan.reserved);
       return {
         plantId: plan.plantId,
@@ -89,6 +98,7 @@ export function getPlantScheduleOptions(
           request.estimatedTons,
           gradeShortageTons,
         ),
+        manuallyClosed,
       };
     });
 }
@@ -99,6 +109,7 @@ export function schedulePlant(
   bookings: QueueBooking[],
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
   isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
+  capacityConfig?: SlotCapacityConfig,
 ): ScheduleResult {
   if (!Number.isFinite(request.estimatedTons) || request.estimatedTons <= 0) {
     return {
@@ -114,6 +125,7 @@ export function schedulePlant(
     undefined,
     resolveCapacity,
     isRushHourReopened,
+    capacityConfig,
   );
   const available = options.filter((option) => option.remainingVehicles > 0);
 
@@ -136,6 +148,16 @@ export function schedulePlant(
           : hasGradePlan
           ? `ไม่มีโรงงานเปิดรับเกรด ${request.grade} ในช่วง ${request.timeSlot}`
           : `ไม่มีแผนรับเกรด ${request.grade} สำหรับวันที่และช่วงเวลาที่เลือก`,
+        options,
+      };
+    }
+
+    // ตรวจสอบว่าทุกตัวเลือกถูกปิดรับด้วยตนเอง (manual closure)
+    const allManuallyClosed = options.every((opt) => opt.manuallyClosed);
+    if (allManuallyClosed) {
+      return {
+        available: false,
+        reason: `ช่วง ${request.timeSlot} ถูกปิดรับทุกโรงงาน กรุณาเลือกช่วงเวลาอื่น`,
         options,
       };
     }
@@ -181,6 +203,7 @@ export function canMoveBookingToPlant(
   bookings: QueueBooking[],
   resolveCapacity: CapacityResolver = createCapacityResolver(plans),
   isRushHourReopened: RushHourOverrideResolver = createRushHourOverrideResolver(),
+  capacityConfig?: SlotCapacityConfig,
 ): ScheduleResult {
   if (booking.plantId === targetPlantId) {
     return {
@@ -198,6 +221,7 @@ export function canMoveBookingToPlant(
         booking.id,
         resolveCapacity,
         isRushHourReopened,
+        capacityConfig,
       ),
     };
   }
@@ -214,6 +238,7 @@ export function canMoveBookingToPlant(
     booking.id,
     resolveCapacity,
     isRushHourReopened,
+    capacityConfig,
   );
   const target = options.find((option) => option.plantId === targetPlantId);
 

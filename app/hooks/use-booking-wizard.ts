@@ -38,6 +38,7 @@ export function useBookingWizard({
   onAcknowledgePolicies,
   resolveCapacity,
   isRushHourReopened,
+  capacityConfig,
   draft,
   viewBooking,
   onDraftChange,
@@ -119,6 +120,7 @@ export function useBookingWizard({
     bookings,
     resolveCapacity,
     isRushHourReopened,
+    capacityConfig,
   );
   const unavailableSlots = bookableSlots.filter(
     (slot) => !schedulePlant(
@@ -127,6 +129,7 @@ export function useBookingWizard({
       bookings,
       resolveCapacity,
       isRushHourReopened,
+      capacityConfig,
     ).available,
   );
   const selectedVehicleBlacklistReasons = selectedVehicle

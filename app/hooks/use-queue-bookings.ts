@@ -222,6 +222,7 @@ export function useQueueBookings({
       bookings,
       resolveCapacity,
       isRushHourReopened,
+      savedConfig,
     );
     if (!schedule.available) return { error: schedule.reason };
 
@@ -261,6 +262,7 @@ export function useQueueBookings({
       bookings,
       resolveCapacity,
       isRushHourReopened,
+      savedConfig,
     );
     if (!result.available) return result.reason;
 

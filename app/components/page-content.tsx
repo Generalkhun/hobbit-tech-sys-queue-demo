@@ -173,6 +173,7 @@ export function PageContent(props: PageContentProps) {
             bookings={queue.bookings}
             resolveCapacity={queue.resolveCapacity}
             isRushHourReopened={queue.isRushHourReopened}
+            capacityConfig={capacity.draftConfig}
             acknowledgements={acknowledgements}
             onCreate={queue.createBooking}
             onGoToRegistry={() => onNavigate("drivers")}

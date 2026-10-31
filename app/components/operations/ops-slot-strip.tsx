@@ -66,6 +66,14 @@ const pipelineStages: {
     soft: "bg-rose-50",
     text: "text-rose-800",
   },
+  {
+    key: "completed",
+    label: "7. ผ่าน รปภ. แล้ว",
+    statuses: ["completed"],
+    bar: "bg-emerald-500",
+    soft: "bg-emerald-50",
+    text: "text-emerald-800",
+  },
 ];
 
 /**
@@ -135,7 +143,7 @@ export function OpsSlotStrip({
           const inSlot = bookings.filter(
             (booking) => booking.date === date && booking.timeSlot === slot,
           );
-          const inPipeline = inSlot.filter((booking) => booking.status !== "completed");
+          const inPipeline = inSlot; // แสดงทุกรายการ รวม completed ด้วย
           const overCap = inPipeline.length > totalCap;
           const fillPercent =
             totalCap > 0 ? Math.min(100, (inPipeline.length / totalCap) * 100) : 0;
